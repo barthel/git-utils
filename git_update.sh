@@ -16,6 +16,7 @@ for f in $REPO_NAMES; do
     then
 	cd "$DIR_NAME/$f";
 	echo "$f: ";
+	git fetch;
 	git checkout -f $BRANCH_NAME;
 	git fetch;
 	git rebase;
