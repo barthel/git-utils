@@ -1,0 +1,53 @@
+#!/usr/bin/env ruby
+ 
+# 1. Install hunspell
+# $ brew install hunspell
+ 
+# 2. Download a dictionary and install it in a path listed by `hunspell -D`
+# $ open http://wiki.services.openoffice.org/wiki/Dictionaries
+ 
+# 3. Move this file into your repository
+# $ mv commit-msg /path/to/repo/.git/hooks
+# $ chmod +x /path/to/repo/.git/hooks/commit-msg
+ 
+# 4. Get mad each time you try to commit
+# $ git commit -m "Fix some spelling erorrs in the layout"
+ 
+class GitSpellCheckeCommit
+def self.locale=(locale)
+@@locale = locale
+end
+ 
+def initialize(file)
+@file = file
+end
+ 
+def validate!
+@check = `cat #{@file} | LC_ALL=#{@@locale} hunspell`
+end
+ 
+def valid?
+validate! =~ /&/ ? false : true
+end
+ 
+def spelling_errors
+@check.split("\n").select{ |line| line =~ /^&/ }.map do |line|
+matches = line.match(/^&\s([^\s]+)\s\d+\s\d+:\s(.+)$/)
+"- You used “#{matches[1]}” and hunspell suggested instead “#{matches[2]}”"
+end
+end
+end
+ 
+GitSpellCheckeCommit.locale = :en_US
+commit = GitSpellCheckeCommit.new(ARGV.first)
+ 
+unless commit.valid?
+puts "---------------------------------------------------------------------"
+puts "It looks like you have spell checking errors in your commit message:"
+puts commit.spelling_errors.join("\n")
+puts "---------------------------------------------------------------------"
+exit 1 # comment this line if you only want the hook to list errors and keep on with the commit
+end
+ 
+exit 0
+
