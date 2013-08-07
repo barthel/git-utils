@@ -1,16 +1,15 @@
 #!/bin/bash
 
+# directory name
+export DIR_NAME="`pwd`"
+
 if [ "" == "$BRANCH_NAME" ]
   then
-
-  # directory name
-  export DIR_NAME="`pwd`"
-
   if ! git rev-parse --git-dir > /dev/null 2>&1;
-    then
+  then
     # check file containing the branch name
     if [ ! -f "$DIR_NAME/.branch_name" ]
-      then
+    then
         echo "file >.branch_name< or git repository is needed"
         exit 1
     fi
@@ -19,6 +18,11 @@ if [ "" == "$BRANCH_NAME" ]
   else
     export BRANCH_NAME="`git rev-parse --abbrev-ref HEAD`"
   fi
-
-  echo "use branch: $BRANCH_NAME"
 fi
+
+echo "use branch: $BRANCH_NAME"
+
+# patch repository
+export PATCH_REPO_NAME="UweBarthel/eclipse"
+export PATCH_LOCAL_NAME="eclipse.private"
+

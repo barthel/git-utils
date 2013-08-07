@@ -2,9 +2,6 @@
 
 . git_branch_name.sh
 
-# patch repository
-PATCH_REPO_NAME="$DIR_NAME/eclipse.private"
-
 # repository names locate in directory
 REPO_NAMES="`ls -A $DIR_NAME`"
 
@@ -14,13 +11,26 @@ cd "$DIR_NAME"
 for f in $REPO_NAMES; do
   if [ -d "$DIR_NAME/$f" ]
     then
-	cd "$DIR_NAME/$f";
-	echo "$f: ";
-	git fetch;
-	git checkout -f $BRANCH_NAME;
-	git fetch;
-	git rebase;
-	cd "$DIR_NAME";
+    echo "$f: ";
+    if [ -d "$DIR_NAME/$f/.git" ]
+        then
+        cd "$DIR_NAME/$f";
+        echo "update $f and switch to branch: $BRANCH_NAME"
+        git fetch --all --prune;
+        git checkout -B $BRANCH_NAME -t -f origin/$BRANCH_NAME;
+        git fetch;
+        git rebase origin/$BRANCH_NAME;
+    else
+        cd "$DIR_NAME";
+        echo "clone $f"
+        if [ "$f" == "$PATCH_LOCAL_NAME" ]
+        then
+            git clone --branch $BRANCH_NAME ssh://git@git-server.icongmbh.de/$PATCH_REPO_NAME $PATCH_LOCAL_NAME
+        else
+            git clone --branch $BRANCH_NAME ssh://git@git-server.icongmbh.de/$f $f
+        fi
+    fi
+    cd "$DIR_NAME";
   fi
 done
 
