@@ -2,8 +2,15 @@
 
 . git_branch_name.sh
 
-# repository names locate in directory
-REPO_NAMES="`ls -A $DIR_NAME`"
+# check if the current directory contains git repository
+if [ -d ".git" ]
+  then
+    # repository name
+    REPO_NAMES="."
+  else
+    # repository names locate in directory
+    REPO_NAMES="`ls -A $DIR_NAME`"
+fi
 
 cd "$DIR_NAME"
 

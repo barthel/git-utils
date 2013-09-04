@@ -7,7 +7,8 @@
 PATCH_LOCAL_DIR_NAME="$DIR_NAME/$PATCH_LOCAL_NAME"
 
 # check if patch repository is available on disk and check the branch name
-if [[ -d "$PATCH_LOCAL_DIR_NAME" && "$BRANCH_NAME" == "`cd $PATCH_LOCAL_DIR_NAME && git rev-parse --abbrev-ref HEAD`" ]]
+#if [[ -d "$PATCH_LOCAL_DIR_NAME" && "$BRANCH_NAME" == "`cd $PATCH_LOCAL_DIR_NAME && git rev-parse --abbrev-ref HEAD`" ]]
+if [ -d "$PATCH_LOCAL_DIR_NAME" ]
 then
     # repository names locate in directory
     REPO_NAMES="`ls -A $DIR_NAME`"
