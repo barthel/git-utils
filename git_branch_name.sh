@@ -26,3 +26,4 @@ echo "use branch: $BRANCH_NAME"
 export PATCH_REPO_NAME="UweBarthel/eclipse"
 export PATCH_LOCAL_NAME="eclipse.private"
 
+#
