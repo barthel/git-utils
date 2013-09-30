@@ -7,7 +7,8 @@ if [ -z "$EDITOR" ]
     EDITOR="/usr/bin/vi"
 fi
 
-sed -i "s/BRANCH_NAME/$BRANCH_NAME/g" "$*"
+GIT_COMMENT_CHAR=`git config --get core.commentchar`
+sed -i "s/GIT_COMMENT_CHAR/$GIT_COMMENT_CHAR/g;s/BRANCH_NAME/$BRANCH_NAME/g" "$*"
 exec $EDITOR "$*"
 
 exit $?
