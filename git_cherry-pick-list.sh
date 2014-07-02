@@ -12,10 +12,13 @@ fi
 echo "Cherry-picking all commits from file ${LIST_FILE} ..."
 
 IFS=$'\n'
-for commit in $(cat "${LIST_FILE}") ; do
+commit_list=(`cat "${LIST_FILE}"`)
+
+counter=1
+for commit in "${commit_list[@]}" ; do
 # format based on git alias: issue-cherry-pick-list
   hash=$(echo ${commit} | cut -d$' ' -f 2)
-  echo -n "cherry picking ${hash} ... "
+  echo -n "[$counter/${#commit_list[@]}] cherry picking: ${hash} ... "
   git cherry-pick "${hash}"
 
   if [[ $? -eq 0 ]]
@@ -31,5 +34,7 @@ for commit in $(cat "${LIST_FILE}") ; do
     read -p "Press [ENTER] key if you have resolved the conflicts and to continue ..."
   fi
   git commit --amend -m"${commit}"
+  counter=$((counter + 1))
 done
-
+echo "cherry picking of ${#commit_list[@]} commits done."
+echo "use the following command to squash these commits: git rebase -i HEAD~${#commit_list[@]}"
