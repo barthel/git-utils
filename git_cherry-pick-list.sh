@@ -15,10 +15,11 @@ IFS=$'\n'
 commit_list=(`cat "${LIST_FILE}"`)
 
 counter=1
+size=${#commit_list[@]}
 for commit in "${commit_list[@]}" ; do
 # format based on git alias: issue-cherry-pick-list
   hash=$(echo ${commit} | cut -d$' ' -f 2)
-  echo -n "[$counter/${#commit_list[@]}] cherry picking: ${hash} ... "
+  echo -n "[$counter/$size] cherry picking: ${hash} ... "
   git cherry-pick "${hash}"
 
   if [[ $? -eq 0 ]]
@@ -36,5 +37,5 @@ for commit in "${commit_list[@]}" ; do
   git commit --amend -m"${commit}"
   counter=$((counter + 1))
 done
-echo "cherry picking of ${#commit_list[@]} commits done."
-echo "use the following command to squash these commits: git rebase -i HEAD~${#commit_list[@]}"
+echo "cherry picking of $size commits done."
+echo "use the following command to squash these commits: git rebase -i HEAD~$size"
