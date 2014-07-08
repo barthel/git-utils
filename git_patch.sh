@@ -81,11 +81,15 @@ then
               target_file_name="${repo_name}/${target_file_path:${#patch_local_dir_name}+1}"
               if [ -f "${DIR_NAME}/${target_file_name}" ]
               then
-                  echo " apply patch: ${patch_file:${#patch_local_dir_name}+1}"
-                  echo " * reset target file: ${target_file_name}"
-                  git checkout -f -- ${DIR_NAME}/${target_file_name}
-                  echo " * apply patchfile: ${patch_file} on target file: ${target_file_name}"
-                  git apply --ignore-whitespace --recount ${patch_file} || true
+                  echo " try to apply patch: ${patch_file:${#patch_local_dir_name}+1}"
+                  if `git checkout -f -- ${DIR_NAME}/${target_file_name} > /dev/null 2>&1` ;
+                    then
+                    echo " * reset target file: ${target_file_name}"
+                    echo " * apply patchfile: ${patch_file} on target file: ${target_file_name}"
+                    git apply --ignore-whitespace --recount ${patch_file} || true
+                  else
+                    echo " * unable to patch file: ${target_file_name}"
+                  fi
               fi
             done
           fi
