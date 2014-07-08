@@ -1,6 +1,9 @@
 #!/bin/bash
 #
-#
+# create patch file:
+#   git diff -- [file to patch] > [patch repository]/[file to patch].patch
+# apply patch
+#   git apply --ignore-whitespace --recount < [patch repository]/[file to patch].patch
 #
 set -e
 # set -x
@@ -15,13 +18,28 @@ if [ "" = "${BRANCH_NAME}" ]
     exit 1
 fi
 
+[ 0 = ${#REPO_NAMES[@]} ] && . git_repositories.sh
+
+if [ 0 = ${#REPO_NAMES[@]} ]
+  then
+    echo "No repository found for applying patches to."
+    exit 0
+fi
+
 echo ''
 
 # patch repository
 repo="UweBarthel/eclipse"
 local_dir="eclipse.private"
+
+# don't clone the patch repository into base git repositoy
 # patch directory
-patch_local_dir_name="${DIR_NAME}/${local_dir}"
+if [ "${REPO_NAMES[0]}" = "." ]
+  then
+  patch_local_dir_name="${DIR_NAME}/../${local_dir}"
+else
+  patch_local_dir_name="${DIR_NAME}/${local_dir}"
+fi
 
 # update or clone patch repository
 if [ -d "${patch_local_dir_name}/.git" ]
@@ -49,19 +67,8 @@ cd "${DIR_NAME}"
 echo ''
 
 # check if patch repository is available on disk and check the branch name
-#if [[ -d "$PATCH_LOCAL_DIR_NAME" && "$BRANCH_NAME" == "`cd $PATCH_LOCAL_DIR_NAME && git rev-parse --abbrev-ref HEAD`" ]]
 if [ -d "${patch_local_dir_name}" ]
 then
-    [ 0 = ${#REPO_NAMES[@]} ] && . git_repositories.sh
-
-    if [ 0 = ${#REPO_NAMES[@]} ]
-      then
-        echo "No repository found for applying patch to"
-        exit 0
-    fi
-
-    echo ''
-
     # repository names locate in directory
     cd "${DIR_NAME}"
     repo_counter=1
@@ -86,7 +93,7 @@ then
                     then
                     echo " * reset target file: ${target_file_name}"
                     echo " * apply patchfile: ${patch_file} on target file: ${target_file_name}"
-                    git apply --ignore-whitespace --recount ${patch_file} || true
+                    git apply --ignore-whitespace --recount < ${patch_file} || true
                   else
                     echo " * unable to patch file: ${target_file_name}"
                   fi
