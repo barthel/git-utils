@@ -11,7 +11,6 @@ set -e
 [ "" = "${DIR_NAME}" ] && DIR_NAME="`pwd`"
 
 [ "" = "${BRANCH_NAME}" ] && . git_branch_name.sh
-
 if [ "" = "${BRANCH_NAME}" ]
   then
     echo "Not empty >BRANCH_NAME< expected"
@@ -19,7 +18,6 @@ if [ "" = "${BRANCH_NAME}" ]
 fi
 
 [ 0 = ${#REPO_NAMES[@]} ] && . git_repositories.sh
-
 if [ 0 = ${#REPO_NAMES[@]} ]
   then
     echo "No repository found for applying patches to."
@@ -29,8 +27,26 @@ fi
 echo ''
 
 # patch repository
-repo="UweBarthel/eclipse"
-local_dir="eclipse.private"
+patch_branch_name_file='.patch_branch_name'
+if [ "" = "${PATCH_BRANCH_NAME}" ]
+  then
+    if [ ! -f "${DIR_NAME}/${patch_branch_name_file}" ]
+      then
+        PATCH_BRANCH_NAME="${BRANCH_NAME}"
+      else
+        PATCH_BRANCH_NAME="$(<${DIR_NAME}/${patch_branch_name_file})"
+    fi
+fi
+patch_repo_file='.patch_repository'
+
+if [ "" = "${PATCH_REPO_NAME}" ]
+  then
+    [ -f "${DIR_NAME}/${patch_repo_file}" ] && PATCH_REPO_NAME="$(<${DIR_NAME}/${patch_repo_file})"
+fi
+local_dir="patch_repo"
+
+# exit if no patch repository is defined
+[ "" = "${PATCH_REPO_NAME}" ] && exit 0
 
 # don't clone the patch repository into base git repositoy
 # patch directory
@@ -44,22 +60,22 @@ fi
 # update or clone patch repository
 if [ -d "${patch_local_dir_name}/.git" ]
   then
-    echo "update ${repo}: ";
+    echo "update ${PATCH_REPO_NAME}: ";
     cd "${patch_local_dir_name}";
-    echo "update ${repo} and switch to branch: ${BRANCH_NAME}"
+    echo "update ${PATCH_REPO_NAME} and switch to branch: ${iPATCH_BRANCH_NAME}"
     git fetch --all --prune;
-    git checkout -B ${BRANCH_NAME} -t -f origin/${BRANCH_NAME};
+    git checkout -B ${PATCH_BRANCH_NAME} -t -f origin/${PATCH_BRANCH_NAME};
     git fetch;
-    git rebase origin/${BRANCH_NAME};
+    git rebase origin/${PATCH_BRANCH_NAME};
 else
-  echo "clone: ${repo} to: ${patch_local_dir_name}"
+  echo "clone: ${PATCH_REPO_NAME} to: ${patch_local_dir_name}"
   cd "${DIR_NAME}";
   if [ -d "${patch_local_dir_name}" ]
     then
     cd "${patch_local_dir_name}"
     local_dir='.'
   fi
-  git clone --branch ${BRANCH_NAME} ssh://git@git-server.icongmbh.de/${repo} ${local_dir} || true
+  git clone --branch ${PATCH_BRANCH_NAME} ssh://git@git-server.icongmbh.de/${PATCH_REPO_NAME} ${local_dir} || true
 fi
 
 cd "${DIR_NAME}"
