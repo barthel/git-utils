@@ -30,6 +30,7 @@ if [ 0 = ${#REPO_NAMES[@]} ]
           echo "file >${repo_list_file}<, >REPO_NAMES< or git repository is needed"
           exit 1
       else
+        # @see: http://stackoverflow.com/questions/10984432/how-to-read-the-file-content-into-a-variable-in-one-go
         REPO_SERVER_URL_NAMES=()
         while IFS= read -r line
           do
