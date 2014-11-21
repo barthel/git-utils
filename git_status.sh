@@ -1,6 +1,10 @@
 #!/bin/bash
 #
-# 
+# Check the status of a list of local GIT working copies.
+#
+# use: DIR_NAME fill with pwd if empty
+# use: REPO_NAMES break if empty
+# use: BRANCH_NAME breaks if empty
 #
 set -e
 # set -x
@@ -29,7 +33,7 @@ counter=1
 size=${#REPO_NAMES[@]}
 for repo in "${REPO_NAMES[@]}"
 do
-  local_dir=${repo//[^a-zA-Z_\.]/_}
+  local_dir=${repo//[^a-zA-Z0-9_\.]/_}
   if [ -d "${DIR_NAME}/${local_dir}" ]
     then
       cd "${DIR_NAME}/${local_dir}";

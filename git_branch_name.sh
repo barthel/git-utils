@@ -1,6 +1,7 @@
 #!/bin/bash
 #
 # Get current GIT branch name based on file or git repository
+# and store the branch name in BRANCH_NAME
 # use: DIR_NAME
 #
 set -e
