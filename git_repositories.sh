@@ -18,9 +18,15 @@ if [ 0 = ${#REPO_NAMES[@]} ]
     # check if the current directory is a git repository
     if `git rev-parse --git-dir > /dev/null 2>&1`;
       then
-        REPO_NAMES=('.')
-        REPO_SERVER_URL_NAMES=(". `git config --get remote.origin.url`")
-    else
+        git_remote_origin_url="$(git config --get remote.origin.url)"
+        top_level="$(git rev-parse --show-toplevel)"
+        git_remote_origin_host_port_path="${git_remote_origin_url##*\/\/}"
+        git_remote_origin_path="${git_remote_origin_host_port_path#*\/}"
+
+        REPO_NAMES=("${git_remote_origin_path}")
+        REPO_SERVER_URL_NAMES=("${git_remote_origin_path} ${git_remote_origin_url}")
+        DIR_NAME="$(dirname ${top_level})"
+      else
       # directory name
       if [ "" = "${DIR_NAME}" ]
         then
