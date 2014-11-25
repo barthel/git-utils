@@ -19,7 +19,7 @@ if [ 0 = ${#REPO_NAMES[@]} ]
     if `git rev-parse --git-dir > /dev/null 2>&1`;
       then
         REPO_NAMES=('.')
-        REPO_SERVER_URL_NAMES=(".\t`git config --get remote.origin.url`")
+        REPO_SERVER_URL_NAMES=(". `git config --get remote.origin.url`")
     else
       # directory name
       if [ "" = "${DIR_NAME}" ]
