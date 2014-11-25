@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Use arument as a file and cherry-pick all containing commit-hashes
+# Use argument as a file and cherry-pick all containing commit-hashes
 #
 LIST_FILE="${1}"
 AUTO_RUN=1
