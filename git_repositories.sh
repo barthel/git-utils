@@ -6,7 +6,7 @@
 #  space in REPO_SERVER_URL_NAMES.
 #
 # export: REPO_NAMES {"<repository name>" ...}
-# export: REPO_SERVER_URL_NAMES {"<repository name><SPACE><repository url>" ...}
+# export: REPO_SERVER_URL_NAMES {"<repository name><TAB><repository url>" ...}
 #
 set -e
 # set -x
@@ -19,7 +19,7 @@ if [ 0 = ${#REPO_NAMES[@]} ]
     if `git rev-parse --git-dir > /dev/null 2>&1`;
       then
         REPO_NAMES=('.')
-        REPO_SERVER_URL_NAMES=(". `git config --get remote.origin.url`")
+        REPO_SERVER_URL_NAMES=(".\t`git config --get remote.origin.url`")
     else
       # directory name
       if [ "" = "${DIR_NAME}" ]
@@ -39,7 +39,7 @@ if [ 0 = ${#REPO_NAMES[@]} ]
             do
               [ "" != "${line}" ] && REPO_SERVER_URL_NAMES[${#REPO_SERVER_URL_NAMES[@]}]="${line}"
             done < ${DIR_NAME}/${repo_list_file}
-          REPO_NAMES=(`cat ${DIR_NAME}/${repo_list_file}|cut -d' ' -f1`)
+          REPO_NAMES=(`cat ${DIR_NAME}/${repo_list_file}|cut -f1`)
       fi
     fi
 fi

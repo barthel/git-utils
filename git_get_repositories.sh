@@ -4,7 +4,7 @@
 # provided by git server.
 #
 # Write the repository name and the repository url to standard out:
-# <repo name><SPACE><repo url>
+# <repo name><TAB><repo url>
 #
 set -e
 # set -x
@@ -33,7 +33,7 @@ repository_list=(`${ssh_cmd} 2>&1 | grep -H "R W" | cut -f2`)
 
 for repo in "${repository_list[@]}"
 do
-  echo "${repo} ssh://${server}/${repo}"
+  echo -e "${repo}\tssh://${server}/${repo}"
 done
 
 #
