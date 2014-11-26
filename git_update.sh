@@ -36,26 +36,23 @@ fi
 
 cd "$DIR_NAME"
 
-# actualize branches
+# update or clone GIT repositories with specific branch
 counter=1
 size=${#REPO_SERVER_URL_NAMES[@]}
 for repo_server_url in "${REPO_SERVER_URL_NAMES[@]}"
 do
   repo=(${repo_server_url})
-  repo_name="${repo[0]}"
-  repo_url="${repo[1]}"
+  repo_name="${repo[0]}" # only the repo name
+  repo_url="${repo[1]}" # the repo url
+  # configure default repo url if empty
   [ "" == "${repo_url}" ] && repo_url="${DEFAULT_GIT_SERVER_URL}/${repo_name}"
+  # normalize repo name like: thirdparty/org.apche into: thirdparty_org.apache
   local_dir=${repo_name//[^a-zA-Z0-9_\.]/_}
   echo ''
-  if [ -d "${DIR_NAME}/${local_dir}/.git" ]
+
+  # check already cloned repo
+  if [ ! -d "${DIR_NAME}/${local_dir}/.git" ]
     then
-      cd "${DIR_NAME}/${local_dir}";
-      echo "[${counter}/${size}] update: ${repo_name} and switch to branch: ${BRANCH_NAME}"
-      git fetch --all --prune;
-      git checkout -B ${BRANCH_NAME} -t -f origin/${BRANCH_NAME};
-      git fetch;
-      git rebase origin/${BRANCH_NAME};
-    else
       echo "[${counter}/${size}] clone: ${repo_name} to: ${DIR_NAME}/${local_dir}"
       cd "${DIR_NAME}";
       if [ -d "${DIR_NAME}/${local_dir}" ]
@@ -63,9 +60,19 @@ do
           cd "${DIR_NAME}/${local_dir}"
           local_dir='.'
       fi
-      git clone --branch ${BRANCH_NAME} ${repo_url} ${local_dir} || true
+      git clone ${repo_url} ${local_dir} || true
   fi
   cd "${DIR_NAME}/${local_dir}"
+
+  # get actual repo state and switch to branch if possible
+  echo "[${counter}/${size}] update: ${repo_name} and switch to branch: ${BRANCH_NAME}"
+  git fetch --all --prune;
+  if [ "" != "$(git branch --remote --list origin/${BRANCH_NAME})" ]
+    then
+    git checkout -B ${BRANCH_NAME} -t -f origin/${BRANCH_NAME};
+    git fetch;
+    git rebase origin/${BRANCH_NAME};
+  fi
 
   git_remote_origin_url=$(git config --local --get "remote.origin.url")
 
