@@ -111,6 +111,10 @@ do
             then
               git config --add "gerrit.createchangeid" "true"
           fi
+          if [ "HEAD:refs/for/${BRANCH_NAME}" != "`git config --local --get remote.origin.push`" ]
+            then
+              git config --add "remote.origin.push" "HEAD:refs/for/${BRANCH_NAME}"
+          fi
           if [ ! -f "${git_dir}/hooks/commit-msg" ]
             then
               # download commit-msg if available
