@@ -13,7 +13,7 @@
 # use: DEFAULT_GIT_SERVER_URL
 #
 set -e
-# set -x
+ set -x
 
 [ "" = "${DIR_NAME}" ] && DIR_NAME="`pwd`"
 
@@ -103,23 +103,41 @@ do
       ssh_cmd="ssh "
       scp_cmd="scp -p "
       [ "${server_name}" != "${server_port}" ] && scp_cmd="${scp_cmd} -P ${server_port}" && ssh_cmd="${ssh_cmd} -p ${server_port}"
+      # check if git server is a gerrit server
       ssh_cmd="${ssh_cmd} ${server_name} gerrit version"
       if `${ssh_cmd} > /dev/null 2>&1`;
         then
           git_dir=$(git rev-parse --git-dir)
+          # check and configure Change-Id handling
           if [ "true" != "`git config --local --bool --get gerrit.createchangeid`" ]
             then
               git config --add "gerrit.createchangeid" "true"
           fi
+          # check and configure branch refspecs
           if [ "HEAD:refs/for/${BRANCH_NAME}" != "`git config --local --get remote.origin.push`" ]
             then
               git config --add "remote.origin.push" "HEAD:refs/for/${BRANCH_NAME}"
           fi
+          # check and download gerrit commit-msg hook
           if [ ! -f "${git_dir}/hooks/commit-msg" ]
             then
-              # download commit-msg if available
-              scp_cmd="${scp_cmd} ${server_name}:hooks/commit-msg ${git_dir}/hooks/"
-              ${scp_cmd} > /dev/null 2>&1 || true
+              # TODO: maybe check remote gerrit version to avoid download from
+              # gerrit-review.googlesource.com
+              if [ "#" != "`git config --get core.commentchar`" ]
+                then
+                  # download commit-msg hook archive to temp file
+                  tmp_file_name="$(tempfile).zip"
+                  wget -qO- -O ${tmp_file_name} https://gerrit-review.googlesource.com/cat/58839,2,gerrit-server/src/main/resources/com/google/gerrit/server/tools/root/hooks/commit-msg%5E0
+                  # extract commit-msg file from archive and delete archive
+                  file_name="$(unzip -M ${tmp_file_name} -d /tmp | grep commit-msg | cut -d':' -f2 | tr -d [:blank:] && rm ${tmp_file_name} )"
+                  # replace content of .git/hooks/commit-msg with content of
+                  # downloaded commit-msg file and remove downloaded commit-msg
+                  [ -f "${file_name}" ] && cat ${file_name} > ${git_dir}/hooks/commit-msg && rm ${file_name}
+              else
+                # download commit-msg if available
+                scp_cmd="${scp_cmd} ${server_name}:hooks/commit-msg ${git_dir}/hooks/"
+                ${scp_cmd} > /dev/null 2>&1 || true
+              fi
           fi
       fi
   fi
