@@ -9,16 +9,54 @@
 set -e
 # set -x
 
-git_server="${1}"
-git_command="${2}"
+[ -z ${verbose} ] && verbose=0
 
-if [ "" == "${git_server}" ]
-  then
-    echo "Not empty argument (git server: git@my-git.server.tld:4711) expected"
-    echo "Usage: ${0##*/} GIT_SERVER_URL [GIT_COMMAND]"
-    echo "Example: ${0##*/} git@gerrit.server.tld:4711 \"gerrit ls-projects\""
-    exit 1
-fi
+show_help() {
+cat << EOF
+
+  Usage: ${0##*/} [-v] -s SERVER_URL [-c COMMAND]
+  Get all (read- and writeable - managed by gitolite) GIT repositories
+  provided by git server via ssh connection.
+
+  Required non empty >DIR_NAME< environment variable or directory
+  argument.
+
+  -c COMMAND    command to execute on remote git repository server
+  -s SERVER_URL server url to remote git repository server
+  -v            verbose mode. Can be used multiple times for increased verbosity.
+
+  Example: ${0##*/} -s ${USER}@gerrit.server.tld:4711 -c "gerrit ls-projects"
+
+EOF
+}
+
+### CMD ARGS
+# process command line arguments
+# @see: http://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash#192266
+# @see: http://mywiki.wooledge.org/BashFAQ/035#getopts
+OPTIND=1         # Reset in case getopts has been used previously in the shell.
+while getopts "c:s:vh?" opt;
+do
+  case "$opt" in
+    c)
+      git_command="$OPTARG"
+      ;;
+    h|\?)
+      show_help
+      exit 0
+      ;;
+    s)
+      git_server="$OPTARG"
+      ;;
+    v)
+      verbose=$((verbose + 1))
+      ;;
+  esac
+done
+
+shift $((OPTIND-1))
+
+[ -z "${git_server}" ] && show_help && exit 0 || true
 
 server="${git_server##*//}" # remove schema/protocol all before '//'
 server_name=${server%:*} # extract all before the last ':'

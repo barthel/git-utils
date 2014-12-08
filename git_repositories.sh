@@ -13,6 +13,45 @@ set -e
 
 repo_list_file='.repositories'
 
+[ -z ${verbose} ] && verbose=0
+
+show_help() {
+cat << EOF
+
+  Usage: ${0##*/} [-v] [-d DIRECTORY]
+  Get current GIT repositoriy list based on file or git repository.
+
+  Required non empty >DIR_NAME< environment variable or directory
+  argument.
+
+  -d DIRECTORY  directory contains the repository file (${repo_list_file})
+  -v            verbose mode. Can be used multiple times for increased verbosity.
+EOF
+}
+
+### CMD ARGS
+# process command line arguments
+# @see: http://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash#192266
+# @see: http://mywiki.wooledge.org/BashFAQ/035#getopts
+OPTIND=1         # Reset in case getopts has been used previously in the shell.
+while getopts "d:vh?" opt;
+do
+  case "$opt" in
+    d)
+      DIR_NAME="$(dirname $OPTARG)"
+      ;;
+    h|\?)
+      show_help
+      exit 0
+    ;;
+    v)
+      verbose=$((verbose + 1))
+    ;;
+  esac
+done
+
+shift $((OPTIND-1))
+
 if [ 0 = ${#REPO_NAMES[@]} ]
   then
     # check if the current directory is a git repository
@@ -50,6 +89,6 @@ if [ 0 = ${#REPO_NAMES[@]} ]
     fi
 fi
 
-echo "use repositories: ${REPO_NAMES[@]}"
+[ 0 -lt "${verbose}" ] && echo "use repositories: ${REPO_NAMES[@]}" || true
 
 #

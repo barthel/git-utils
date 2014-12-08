@@ -13,7 +13,54 @@
 # use: DEFAULT_GIT_SERVER_URL
 #
 set -e
- set -x
+# set -x
+
+[ -z ${verbose} ] && verbose=0
+
+patch=0
+
+show_help() {
+cat << EOF
+
+  Usage: ${0##*/} [-v] [-d DIRECTORY]
+  Update all local GIT working copies or clone GIT repositories if the GIT
+  repository is defined in >REPO_NAMES< but not cloned to
+  >DIR_NAME</local directory.
+
+  Use >`pwd`< if >DIR_NAME< environment variable and the directory argument
+  are empty.
+  
+  -d DIRECTORY  directory contains the repository file (${repo_list_file})
+  -p            execute patch script after update
+  -v            verbose mode. Can be used multiple times for increased verbosity.
+EOF
+}
+
+### CMD ARGS
+# process command line arguments
+# @see: http://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash#192266
+# @see: http://mywiki.wooledge.org/BashFAQ/035#getopts
+OPTIND=1         # Reset in case getopts has been used previously in the shell.
+while getopts "d:pvh?" opt;
+do
+  case "$opt" in
+    d)
+      DIR_NAME="$(dirname $OPTARG)"
+    ;;
+    h|\?)
+      show_help
+      exit 0
+    ;;
+    p)
+      patch=1
+      ;;
+    v)
+      verbose=$((verbose + 1))
+    ;;
+  esac
+done
+
+shift $((OPTIND-1))
 
 [ "" = "${DIR_NAME}" ] && DIR_NAME="`pwd`"
 
@@ -145,6 +192,6 @@ do
   counter=$((counter + 1))
 done
 
-. git_patch.sh
+[ 0 -gt "${patch}" ] && . git_patch.sh || true
 
 #

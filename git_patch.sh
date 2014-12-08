@@ -15,6 +15,52 @@
 set -e
 # set -x
 
+# patch repository
+patch_branch_name_file='.patch_branch_name'
+patch_repo_file='.patch_repository'
+local_dir="patch_repo"
+
+[ -z ${verbose} ] && verbose=0
+
+show_help() {
+cat << EOF
+
+  Usage: ${0##*/} [-v] [-d DIRECTORY]
+  Patch GIT repositories based on patch files located in a specific GIT
+  repository.
+
+  -v            verbose mode. Can be used multiple times for increased verbosity.
+
+  create patch file:
+    git diff -- [file to patch] > [patch repository]/[file to patch].patch
+  apply patch
+    git apply --ignore-whitespace --recount < [patch repository]/[file to patch].patch
+EOF
+}
+
+### CMD ARGS
+# process command line arguments
+# @see: http://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash#192266
+# @see: http://mywiki.wooledge.org/BashFAQ/035#getopts
+OPTIND=1         # Reset in case getopts has been used previously in the shell.
+while getopts "d:vh?" opt;
+do
+  case "$opt" in
+    d)
+    DIR_NAME="$(dirname $OPTARG)"
+    ;;
+    h|\?)
+    show_help
+    exit 0
+    ;;
+    v)
+    verbose=$((verbose + 1))
+    ;;
+  esac
+done
+
+shift $((OPTIND-1))
+
 [ "" = "${DIR_NAME}" ] && DIR_NAME="`pwd`"
 
 [ "" = "${BRANCH_NAME}" ] && . git_branch_name.sh
@@ -33,8 +79,6 @@ fi
 
 echo ''
 
-# patch repository
-patch_branch_name_file='.patch_branch_name'
 if [ "" = "${PATCH_BRANCH_NAME}" ]
   then
     if [ ! -f "${DIR_NAME}/${patch_branch_name_file}" ]
@@ -44,7 +88,6 @@ if [ "" = "${PATCH_BRANCH_NAME}" ]
         PATCH_BRANCH_NAME="$(<${DIR_NAME}/${patch_branch_name_file})"
     fi
 fi
-patch_repo_file='.patch_repository'
 
 if [ "" = "${PATCH_REPO_NAME}" ]
   then
@@ -55,7 +98,6 @@ if [ "" = "${PATCH_REPO_NAME}" ]
         PATCH_REPO_URL="${patch_repo[1]}"
     fi
 fi
-local_dir="patch_repo"
 
 # exit if no patch repository is defined
 [ "" = "${PATCH_REPO_NAME}" ] && exit 0

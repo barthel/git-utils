@@ -9,6 +9,45 @@
 set -e
 # set -x
 
+[ -z ${verbose} ] && verbose=0
+
+show_help() {
+cat << EOF
+
+  Usage: ${0##*/} [-v] [-d DIRECTORY]
+  Check the status of a list of local GIT working copies.
+
+  Use >`pwd`< if >DIR_NAME< environment variable and the directory argument
+  are empty.
+
+  -d DIRECTORY  directory contains the repository file (${repo_list_file})
+  -v            verbose mode. Can be used multiple times for increased verbosity.
+EOF
+}
+
+### CMD ARGS
+# process command line arguments
+# @see: http://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash#192266
+# @see: http://mywiki.wooledge.org/BashFAQ/035#getopts
+OPTIND=1         # Reset in case getopts has been used previously in the shell.
+while getopts "d:vh?" opt;
+do
+  case "$opt" in
+    d)
+      DIR_NAME="$(dirname $OPTARG)"
+    ;;
+    h|\?)
+      show_help
+      exit 0
+    ;;
+    v)
+      verbose=$((verbose + 1))
+    ;;
+  esac
+done
+
+shift $((OPTIND-1))
+
 [ "" = "${DIR_NAME}" ] && DIR_NAME="`pwd`"
 
 [ "" = "${BRANCH_NAME}" ] && . git_branch_name.sh
