@@ -12,6 +12,7 @@ set -e
 release_commiter_name="ic_jenkins"
 release_commit_eyecatcher='\[maven-release-plugin\]'
 regexp_release_commit='.*'${release_commit_eyecatcher}'.*release'
+quit=false
 
 [ -z ${verbose} ] && verbose=0
 
@@ -26,6 +27,7 @@ cat << EOF
 
   -d DIRECTORY  directory contains the repository file (${repo_list_file})
   -v            verbose mode. Can be used multiple times for increased verbosity.
+  -q            quit modus. View only commit count summary for repository.
 EOF
 }
 
@@ -34,7 +36,7 @@ EOF
 # @see: http://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash#192266
 # @see: http://mywiki.wooledge.org/BashFAQ/035#getopts
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
-while getopts "d:vh?" opt;
+while getopts "d:qvh?" opt;
 do
   case "$opt" in
     d)
@@ -43,6 +45,9 @@ do
     h|\?)
       show_help
       exit 0
+    ;;
+    q)
+      quit=true
     ;;
     v)
       verbose=$((verbose + 1))
@@ -83,7 +88,7 @@ do
       counter_commits=0
       cd "${DIR_NAME}/${local_dir}";
       echo -n "[${counter}/${size}] check commits since last release of ${repo}: ";
-      [ 0 -lt "${verbose}" ] && echo ""
+      [ false == ${quit} ] && echo "" || true
       # find all directories within the current repo but ignore: './target'
       # and all directories starts with './.'
       IFS=$' '
@@ -96,17 +101,22 @@ do
             [ -f "./pom.xml" ] && directory="./pom.xml" || continue
         fi
         # get the last release commit based on commit message regular expression
-        # and the name of the commiter
+        # and the name of the committer
         IFS=$'\t'
         last_release_commit=($(git log --pretty=format:"%H%x09\"%s\"" --all --max-count=1 --regexp-ignore-case --committer ${release_commiter_name} --branches=${BRANCH_NAME} --basic-regexp --grep "${regexp_release_commit}" -- ${directory}))
-        # check the count of commite since the ${last_release_commit} commit
+        # check the count of commit since the ${last_release_commit} commit
         # hash and ignore other release commits (like the next iteration commit)
         # instead
         pending_commits=`git log --pretty=format:"%H%x09\"%s\"" ${BRANCH_NAME}  ${last_release_commit[0]}.. -- ${directory} | grep -v "${release_commit_eyecatcher}" | wc -l`
         counter_commits=$((counter_commits + pending_commits))
-        [[ 0 -lt "${verbose}" && 0 != ${pending_commits} ]] && echo -e "\t${directory##*/}:\t#${pending_commits}\t (since: ${last_release_commit[0]} ${last_release_commit[1]})";
+        if [[ 0 -lt "${pending_commits}" && false == ${quit} ]]
+          then
+            echo -e -n "\t${directory##*/}:\t#${pending_commits}"
+            [ 0 -lt "${verbose}" ] && echo -e -n "\t (since: ${last_release_commit[0]} ${last_release_commit[1]})";
+            echo ""
+        fi
       done
-      echo -e "\t#${counter_commits}"
+      [[ 0 -lt "${verbose}" || true == ${quit} ]] && echo -e "\t#${counter_commits}" || true
   fi
   cd "${DIR_NAME}";
   counter=$((counter + 1))
