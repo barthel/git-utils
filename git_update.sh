@@ -11,9 +11,16 @@
 # use: BRANCH_NAME breaks if empty
 # use: REPO_SERVER_URL_NAMES breaks if empty
 # use: DEFAULT_GIT_SERVER_URL
-#
-set -e
+
+# activate job monitoring
+# @see: http://www.linuxforums.org/forum/programming-scripting/139939-fg-no-job-control-script.html
+set -m
 # set -x
+
+quiet=false
+current_dir="$(pwd)"
+
+required_helper=('git' 'grep' 'find' 'xargs' 'pwd' 'wc')
 
 [ -z ${verbose} ] && verbose=0
 
@@ -21,21 +28,37 @@ patch=0
 
 show_help() {
 cat << EOF
+Usage: ${0##*/} [-v] [-d DIRECTORY]
 
-  Usage: ${0##*/} [-v] [-d DIRECTORY]
-  Update all local GIT working copies or clone GIT repositories if the GIT
-  repository is defined in >REPO_NAMES< but not cloned to
-  >DIR_NAME</local directory.
+Update all local GIT working copies or clone GIT repositories if the GIT
+repository is defined in >REPO_NAMES< but not cloned to
+>DIR_NAME</local directory.
 
-  Use >`pwd`< if >DIR_NAME< environment variable and the directory argument
-  are empty.
-  
-  -d DIRECTORY  directory contains the repository file (${repo_list_file})
-  -p            execute patch script after update
-  -v            verbose mode. Can be used multiple times for increased verbosity.
+Use >`pwd`< if >DIR_NAME< environment variable and the directory argument
+are empty.
+
+    -h|-?         display this help and exit.
+    -d DIRECTORY  directory contains the repositories list and branch name file ('${current_dir}').
+    -p            execute patch script after update
+    -v            verbose mode. Can be used multiple times for increased verbosity.
 EOF
 }
 
+check_required_helper() {
+  helper=("$@")
+  for executable in "${helper[@]}";
+  do
+    # @see: http://stackoverflow.com/questions/592620/how-to-check-if-a-program-exists-from-a-bash-script
+    if hash $executable 2>/dev/null
+      then
+        [[ $verbose -gt 0 ]] && echo "found required executable: $executable"
+      else
+        echo "the executable: $executable is required!"
+        return 1
+    fi
+  done
+  return 0
+}
 ### CMD ARGS
 # process command line arguments
 # @see: http://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash#192266
@@ -44,44 +67,31 @@ OPTIND=1         # Reset in case getopts has been used previously in the shell.
 while getopts "d:pvh?" opt;
 do
   case "$opt" in
-    d)
-      DIR_NAME="$(dirname $OPTARG)"
+    d)  DIR_NAME="$OPTARG"
     ;;
     h|\?)
       show_help
       exit 0
     ;;
-    p)
-      patch=1
-      ;;
-    v)
-      verbose=$((verbose + 1))
+    p)  patch=1
+    ;;
+    v)  verbose=$((verbose + 1))
     ;;
   esac
 done
 
 shift $((OPTIND-1))
-
-[ "" = "${DIR_NAME}" ] && DIR_NAME="`pwd`"
-
-[ "" = "${BRANCH_NAME}" ] && . git_branch_name.sh
-
-if [ "" = "${BRANCH_NAME}" ]
-  then
-    echo "Not empty >BRANCH_NAME< expected"
-    exit 1
-fi
-
 REPO_SERVER_URL_NAMES=(${1})
+
+[ -z "${DIR_NAME}" ] && DIR_NAME="${current_dir}" || true
+
+[ -z "${BRANCH_NAME}" ] && . git_branch_name.sh
+[ -z "${BRANCH_NAME}" ] && echo "Not empty >BRANCH_NAME< expected" && exit 1 || true
+
 [ 0 = ${#REPO_SERVER_URL_NAMES[@]} ] && . git_repositories.sh
+[ 0 = ${#REPO_SERVER_URL_NAMES[@]} ] && echo "Not empty >REPO_NAMES< expected" && exit 1 || true
 
-if [ 0 = ${#REPO_SERVER_URL_NAMES[@]} ]
-  then
-    echo "Not empty >REPO_NAMES< expected"
-    exit 1
-fi
-
-cd "$DIR_NAME"
+cd "${DIR_NAME}"
 
 # update or clone GIT repositories with specific branch
 counter=1
@@ -92,24 +102,24 @@ do
   repo_name="${repo[0]}" # only the repo name
   repo_url="${repo[1]}" # the repo url
   # configure default repo url if empty
-  [ "" == "${repo_url}" ] && repo_url="${DEFAULT_GIT_SERVER_URL}/${repo_name}"
+  [ -z "${repo_url}" ] && repo_url="${DEFAULT_GIT_SERVER_URL}/${repo_name}"
   # normalize repo name like: thirdparty/org.apche into: thirdparty_org.apache
   local_dir=${repo_name//[^a-zA-Z0-9_\.]/_}
   echo ''
 
   # check already cloned repo
-  if [ ! -d "${DIR_NAME}/${local_dir}/.git" ]
+  if [ ! -d "${local_dir}/.git" ]
     then
       echo "[${counter}/${size}] clone: ${repo_name} to: ${DIR_NAME}/${local_dir}"
       cd "${DIR_NAME}";
-      if [ -d "${DIR_NAME}/${local_dir}" ]
+      if [ -d "${local_dir}" ]
         then
-          cd "${DIR_NAME}/${local_dir}"
+          cd "${local_dir}"
           local_dir='.'
       fi
       git clone ${repo_url} ${local_dir} || true
   fi
-  cd "${DIR_NAME}/${local_dir}"
+  pushd "${local_dir}" 2>&1>/dev/null
 
   # get actual repo state and switch to branch if possible
   echo "[${counter}/${size}] update: ${repo_name} and switch to branch: ${BRANCH_NAME}"
@@ -189,10 +199,12 @@ do
           fi
       fi
   fi
-  cd "${DIR_NAME}";
+  popd 2>&1 > /dev/null;
   counter=$((counter + 1))
 done
 
-[ 0 -gt "${patch}" ] && . git_patch.sh || true
+cd "${current_dir}"
+
+[ 0 != "${patch}" ] && . git_patch.sh || true
 
 #

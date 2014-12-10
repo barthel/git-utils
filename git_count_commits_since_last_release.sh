@@ -2,36 +2,54 @@
 #
 # Get count of commits since the last release commit.
 #
-# use: DIR_NAME fill with pwd if empty
+# use: DIR_NAME
 # use: REPO_NAMES break if empty
 # use: BRANCH_NAME breaks if empty
 #
+
+# activate job monitoring
+# @see: http://www.linuxforums.org/forum/programming-scripting/139939-fg-no-job-control-script.html
 set -m
 # set -x
 
 release_commiter_name="ic_jenkins"
 release_commit_eyecatcher='\[maven-release-plugin\]'
 regexp_release_commit='.*'${release_commit_eyecatcher}'.*release'
-quit=false
+
+quiet=false
+
+required_helper=('git' 'grep' 'find' 'xargs' 'pwd' 'wc')
 
 [ -z ${verbose} ] && verbose=0
 
 show_help() {
 cat << EOF
+Usage: ${0##*/} [-h?qv] [-d DIRECTORY]
 
-  Usage: ${0##*/} [-v]
-  Get count of commits since the last release commit.
+Get count of commits since the last release commit.
 
-  Use >`pwd`< if >DIR_NAME< environment variable and the directory argument
-  are empty.
-
-  -d DIRECTORY  directory contains the repository file (${repo_list_file})
-  -v            verbose mode. Can be used multiple times for increased verbosity.
-                A
-  -q            quit modus. View only commit count summary for repository.
+    -h|-?        display this help and exit.
+    -d DIRECTORY directory contains the repositories list and branch name file ('`pwd`').
+    -q           quiet modus. View only commit count summary for repository.
+    -v           verbose mode. Can be used multiple times for increased verbosity.
 EOF
 }
 
+check_required_helper() {
+  helper=("$@")
+  for executable in "${helper[@]}";
+  do
+    # @see: http://stackoverflow.com/questions/592620/how-to-check-if-a-program-exists-from-a-bash-script
+    if hash $executable 2>/dev/null
+      then
+        [[ $verbose -gt 0 ]] && echo "found required executable: $executable"
+      else
+        echo "the executable: $executable is required!"
+        return 1
+    fi
+  done
+  return 0
+}
 ### CMD ARGS
 # process command line arguments
 # @see: http://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash#192266
@@ -41,14 +59,14 @@ while getopts "d:qvh?" opt;
 do
   case "$opt" in
     d)
-      DIR_NAME="$(dirname $OPTARG)"
+      DIR_NAME="$OPTARG"
     ;;
     h|\?)
       show_help
       exit 0
     ;;
     q)
-      quit=true
+      quiet=true
     ;;
     v)
       verbose=$((verbose + 1))
@@ -57,25 +75,17 @@ do
 done
 
 shift $((OPTIND-1))
-
-[ "" = "${DIR_NAME}" ] && DIR_NAME="`pwd`"
-
-[ "" = "${BRANCH_NAME}" ] && . git_branch_name.sh
-if [ "" = "${BRANCH_NAME}" ]
-  then
-    echo "Not empty >BRANCH_NAME< expected"
-    exit 1
-fi
-
 REPO_NAMES=(${1})
-[ 0 = ${#REPO_NAMES[@]} ] && . git_repositories.sh
-if [ 0 = ${#REPO_NAMES[@]} ]
-  then
-    echo "Not empty >REPO_NAMES< expected"
-    exit 1
-fi
 
-cd "$DIR_NAME"
+[ -z "${DIR_NAME}" ] && DIR_NAME="`pwd`" || true
+
+[ -z "${BRANCH_NAME}" ] && . git_branch_name.sh
+[ -z "${BRANCH_NAME}" ] && echo "Not empty >BRANCH_NAME< expected" && exit 1 || true
+
+[ 0 = ${#REPO_NAMES[@]} ] && . git_repositories.sh
+[ 0 = ${#REPO_NAMES[@]} ] && echo "Not empty >REPO_NAMES< expected" && exit 1 || true
+
+cd "${DIR_NAME}"
 
 counter=1
 size=${#REPO_NAMES[@]}
@@ -89,7 +99,7 @@ do
       counter_commits=0
       cd "${DIR_NAME}/${local_dir}";
       echo -n "[${counter}/${size}] check commits since last release of ${repo}: ";
-      [ false == ${quit} ] && echo "" || true
+      [ false == ${quiet} ] && echo "" || true
       # find all directories within the current repo but ignore: './target'
       # and all directories starts with './.'
       IFS=$' '
@@ -110,14 +120,14 @@ do
         # instead
         pending_commits=`git log --pretty=format:"%H%x09\"%s\"" ${BRANCH_NAME}  ${last_release_commit[0]}.. -- ${directory} | grep -v "${release_commit_eyecatcher}" | wc -l`
         counter_commits=$((counter_commits + pending_commits))
-        if [[ 0 -lt "${pending_commits}" && false == ${quit} ]]
+        if [[ 0 -lt "${pending_commits}" && false == ${quiet} ]]
           then
             echo -e -n "\t${directory##*/}:\t#${pending_commits}"
             [ 0 -lt "${verbose}" ] && echo -e -n "\t (since: ${last_release_commit[0]} ${last_release_commit[1]})";
             echo ""
         fi
       done
-      [[ 0 -lt "${verbose}" || true == ${quit} ]] && echo -e "\t#${counter_commits}" || true
+      [[ 0 -lt "${verbose}" || true == ${quiet} ]] && echo -e "\t#${counter_commits}" || true
   fi
   cd "${DIR_NAME}";
   counter=$((counter + 1))

@@ -3,78 +3,109 @@
 # Get current GIT branch name based on file or git repository
 # and store the branch name in BRANCH_NAME
 #
-# use: DIR_NAME breaks if empty
+# use: DIR_NAME
 #
-# export: DEFAULT_GIT_SERVER_URL
 # export: BRANCH_NAME
-#
-set -e
+
+# activate job monitoring
+# @see: http://www.linuxforums.org/forum/programming-scripting/139939-fg-no-job-control-script.html
+set -m
 # set -x
 
 DEFAULT_GIT_SERVER_URL="ssh://git@git-server.icongmbh.de"
 
 branch_name_file='.branch_name'
 
+required_helper=('basename' 'git')
+
 [ -z ${verbose} ] && verbose=0
 
 show_help() {
 cat << EOF
+Usage: ${0##*/} [-vh?] [-f BRANCHNAMEFILE]
 
-  Usage: ${0##*/} [-v] [-d DIRECTORY]
-  Get current GIT branch name based on file or git repository
-  and store the branch name in >BRANCH_NAME<.
+Get current GIT branch name based on file or git repository
+and store the branch name in >BRANCH_NAME<.
 
-  Required non empty >DIR_NAME< environment variable or directory
-  argument.
+Required non empty >DIR_NAME< environment variable or directory
+argument.
 
-  -d DIRECTORY  directory contains the branch name file (${branch_name_file})
-  -v            verbose mode. Can be used multiple times for increased verbosity.
+    -h|-?             display this help and exit.
+    -f BRANCHNAMEFILE file name contains the branch name ('${branch_name_file}').
+    -v                verbose mode. Can be used multiple times for increased verbosity.
+
+Example:  ${0##*/}
+          ${0##*/} -v
+          ${0##*/} -f mybranchname.txt
 EOF
 }
 
+check_required_helper() {
+  helper=("$@")
+  for executable in "${helper[@]}";
+  do
+    # @see: http://stackoverflow.com/questions/592620/how-to-check-if-a-program-exists-from-a-bash-script
+    if hash $executable 2>/dev/null
+      then
+        [[ $verbose -gt 0 ]] && echo "found required executable: $executable"
+      else
+        echo "the executable: $executable is required!"
+        return 1
+    fi
+  done
+  return 0
+}
 ### CMD ARGS
 # process command line arguments
 # @see: http://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash#192266
 # @see: http://mywiki.wooledge.org/BashFAQ/035#getopts
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
-while getopts "d:vh?" opt;
+while getopts "f:h?v" opt;
 do
   case "$opt" in
-    d)
-      DIR_NAME="$(dirname $OPTARG)"
+    f)  branch_name_file="$(basename $OPTARG)"
     ;;
     h|\?)
       show_help
       exit 0
     ;;
-    v)
-      verbose=$((verbose + 1))
+    v)  verbose=$((verbose + 1))
     ;;
   esac
 done
 
 shift $((OPTIND-1))
 
-if [ "" = "${BRANCH_NAME}" ]
+if [ -z "${BRANCH_NAME}" ]
   then
     if `git rev-parse --git-dir > /dev/null 2>&1`;
       then
         BRANCH_NAME="`git rev-parse --abbrev-ref HEAD`"
       else
         # directory name
-        if [ "" = "${DIR_NAME}" ]
+        if [ -z "${DIR_NAME}" ]
           then
-            echo "Not empty >DIR_NAME< expected"
+            echo "Not empty >DIR_NAME< or directory argument expected."
             exit 1
         fi
         # check file containing the branch name
         if [ ! -f "${DIR_NAME}/${branch_name_file}" ]
           then
-            echo "file >${branch_name_file}<, >BRANCH_NAME< or git repository is needed"
-            exit 1
+            current_directory="`pwd`"
+            cd "${DIR_NAME}"
+            if `git rev-parse --git-dir > /dev/null 2>&1`;
+              then
+                BRANCH_NAME="`git rev-parse --abbrev-ref HEAD`"
+                cd "${current_directory}"
+            else
+              echo "File >${DIR_NAME}/${branch_name_file}<, >BRANCH_NAME< or git repository is required."
+              cd "${current_directory}"
+              exit 1
+            fi
+        else
+          # get branch name from file
+          BRANCH_NAME="$(<${DIR_NAME}/${branch_name_file})"
         fi
-        # get branch name from file
-        BRANCH_NAME="$(<${DIR_NAME}/${branch_name_file})"
     fi
 fi
 

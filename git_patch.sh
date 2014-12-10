@@ -11,30 +11,30 @@
 # export: PATCH_BRANCH_NAME
 # export: PATCH_REPO_NAME
 # export: PATCH_REPO_URL
-#
-set -e
+
+# activate job monitoring
+# @see: http://www.linuxforums.org/forum/programming-scripting/139939-fg-no-job-control-script.html
+set -m
 # set -x
 
 # patch repository
 patch_branch_name_file='.patch_branch_name'
 patch_repo_file='.patch_repository'
 local_dir="patch_repo"
+current_dir="$(pwd)"
 
 [ -z ${verbose} ] && verbose=0
 
 show_help() {
 cat << EOF
+Usage: ${0##*/} [-h?v] [-d DIRECTORY]
 
-  Usage: ${0##*/} [-v] [-d DIRECTORY]
-  Patch GIT repositories based on patch files located in a specific GIT
-  repository.
+Patch GIT repositories based on patch files located in a specific GIT
+repository.
 
-  -v            verbose mode. Can be used multiple times for increased verbosity.
-
-  create patch file:
-    git diff -- [file to patch] > [patch repository]/[file to patch].patch
-  apply patch
-    git apply --ignore-whitespace --recount < [patch repository]/[file to patch].patch
+    -h|-?         display this help and exit.
+    -d DIRECTORY  directory contains the branch name file.
+    -v            verbose mode. Can be used multiple times for increased verbosity.
 EOF
 }
 
@@ -47,7 +47,7 @@ while getopts "d:vh?" opt;
 do
   case "$opt" in
     d)
-    DIR_NAME="$(dirname $OPTARG)"
+    DIR_NAME="$OPTARG"
     ;;
     h|\?)
     show_help
@@ -61,25 +61,17 @@ done
 
 shift $((OPTIND-1))
 
-[ "" = "${DIR_NAME}" ] && DIR_NAME="`pwd`"
+[ -z "${DIR_NAME}" ] && DIR_NAME="${current_dir}" || true
 
-[ "" = "${BRANCH_NAME}" ] && . git_branch_name.sh
-if [ "" = "${BRANCH_NAME}" ]
-  then
-    echo "Not empty >BRANCH_NAME< expected"
-    exit 1
-fi
+[ -z "${BRANCH_NAME}" ] && . git_branch_name.sh
+[ -z "${BRANCH_NAME}" ] && echo "Not empty >BRANCH_NAME< expected" && exit 1 || true
 
 [ 0 = ${#REPO_NAMES[@]} ] && . git_repositories.sh
-if [ 0 = ${#REPO_NAMES[@]} ]
-  then
-    echo "No repository found for applying patches to."
-    exit 0
-fi
+[ 0 = ${#REPO_NAMES[@]} ] && echo "No repository found for applying patches to." && exit 1 || true
 
 echo ''
 
-if [ "" = "${PATCH_BRANCH_NAME}" ]
+if [ -z "${PATCH_BRANCH_NAME}" ]
   then
     if [ ! -f "${DIR_NAME}/${patch_branch_name_file}" ]
       then
@@ -89,7 +81,7 @@ if [ "" = "${PATCH_BRANCH_NAME}" ]
     fi
 fi
 
-if [ "" = "${PATCH_REPO_NAME}" ]
+if [ -z "${PATCH_REPO_NAME}" ]
   then
     if [ -f "${DIR_NAME}/${patch_repo_file}" ]
       then
@@ -100,23 +92,30 @@ if [ "" = "${PATCH_REPO_NAME}" ]
 fi
 
 # exit if no patch repository is defined
-[ "" = "${PATCH_REPO_NAME}" ] && exit 0
-[ "" = "${PATCH_REPO_URL}" ] && PATCH_REPO_URL="${DEFAULT_GIT_SERVER_URL}/${PATCH_REPO_NAME}"
+[ -z "${PATCH_REPO_NAME}" ] && exit 0
+[ -z "${PATCH_REPO_URL}" ] && PATCH_REPO_URL="${DEFAULT_GIT_SERVER_URL}/${PATCH_REPO_NAME}"
 
+cd "${DIR_NAME}"
 # don't clone the patch repository into base git repositoy
 # patch directory
 if [ "${REPO_NAMES[0]}" = "." ]
   then
-    patch_local_dir_name="${DIR_NAME}/../${local_dir}"
+    if `git rev-parse --git-dir > /dev/null 2>&1`;
+      then
+        top_level="$(git rev-parse --show-toplevel)"
+        patch_local_dir_name="$(dirname ${top_level}/${local_dir})"
+      else
+        patch_local_dir_name="../${local_dir}"
+    fi
   else
-    patch_local_dir_name="${DIR_NAME}/${local_dir}"
+    patch_local_dir_name="${local_dir}"
 fi
 
 # update or clone patch repository
 if [ -d "${patch_local_dir_name}/.git" ]
   then
     cd "${patch_local_dir_name}";
-    echo "update: ${PATCH_REPO_NAME} and switch to branch: ${iPATCH_BRANCH_NAME}"
+    echo "update: ${PATCH_REPO_NAME} and switch to branch: ${PATCH_BRANCH_NAME}"
     git fetch --all --prune;
     git checkout -B ${PATCH_BRANCH_NAME} -t -f origin/${PATCH_BRANCH_NAME};
     git fetch;
@@ -132,15 +131,15 @@ if [ -d "${patch_local_dir_name}/.git" ]
     git clone --branch ${PATCH_BRANCH_NAME} ${PATCH_REPO_URL} ${local_dir} || true
 fi
 
-cd "${DIR_NAME}"
+cd "${current_dir}"
 
 echo ''
 
+cd "${DIR_NAME}"
 # check if patch repository is available on disk and check the branch name
 if [ -d "${patch_local_dir_name}" ]
   then
     # repository names locate in directory
-    cd "${DIR_NAME}"
     repo_counter=1
     repo_size=${#REPO_NAMES[@]}
     for repo_name in ${REPO_NAMES[@]}
@@ -149,9 +148,9 @@ if [ -d "${patch_local_dir_name}" ]
       if [[ -d "${repo_name}" && "${repo_name}" != "${local_dir}" ]]
         then
           patch_files=(`find ${patch_local_dir_name} -name *.patch`)
-          if [ -d "${DIR_NAME}/${repo_name}" ]
+          if [ -d "${repo_name}" ]
             then
-              cd "${DIR_NAME}/${repo_name}";
+              cd "${repo_name}";
               for patch_file in ${patch_files[@]}
               do
                 target_file_path="${patch_file%.[^.]*}"
@@ -170,10 +169,11 @@ if [ -d "${patch_local_dir_name}" ]
                 fi
               done
           fi
-          cd "${DIR_NAME}";
+          cd - 2>&1 > /dev/null
       fi
       repo_counter=$((repo_counter + 1))
     done
 fi
 
+cd "${current_dir}"
 #
