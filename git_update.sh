@@ -174,7 +174,8 @@ do
                 then
                   # download commit-msg hook archive to temp file
                   tmp_file_name="$(tempfile).zip"
-                  wget -qO- -O ${tmp_file_name} https://gerrit-review.googlesource.com/cat/58839,2,gerrit-server/src/main/resources/com/google/gerrit/server/tools/root/hooks/commit-msg%5E0
+                  wget -q -nv -O ${tmp_file_name} \
+                    https://gerrit-review.googlesource.com/cat/58839,2,gerrit-server/src/main/resources/com/google/gerrit/server/tools/root/hooks/commit-msg%5E0
                   # extract commit-msg file from archive and delete archive
                   file_name="$(unzip -M ${tmp_file_name} -d /tmp | grep commit-msg | cut -d':' -f2 | tr -d [:blank:] && rm ${tmp_file_name} )"
                   # replace content of .git/hooks/commit-msg with content of

@@ -6,7 +6,7 @@
 # use: REPO_NAMES break if empty
 # use: BRANCH_NAME breaks if empty
 #
-set -e
+set -m
 # set -x
 
 release_commiter_name="ic_jenkins"
@@ -27,6 +27,7 @@ cat << EOF
 
   -d DIRECTORY  directory contains the repository file (${repo_list_file})
   -v            verbose mode. Can be used multiple times for increased verbosity.
+                A
   -q            quit modus. View only commit count summary for repository.
 EOF
 }
