@@ -12,8 +12,6 @@
 set -m
 # set -x
 
-required_helper=('ssh' 'grep' 'cut')
-
 [ -z ${verbose} ] && verbose=0
 
 show_help() {
@@ -35,21 +33,6 @@ Example: ${0##*/} -s ${USER}@gerrit.server.tld:4711 -c "gerrit ls-projects"
 EOF
 }
 
-check_required_helper() {
-  helper=("$@")
-  for executable in "${helper[@]}";
-  do
-    # @see: http://stackoverflow.com/questions/592620/how-to-check-if-a-program-exists-from-a-bash-script
-    if hash $executable 2>/dev/null
-      then
-        [[ $verbose -gt 0 ]] && echo "found required executable: $executable"
-      else
-        echo "the executable: $executable is required!"
-        return 1
-    fi
-  done
-  return 0
-}
 ### CMD ARGS
 # process command line arguments
 # @see: http://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash#192266
