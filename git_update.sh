@@ -18,7 +18,13 @@ set -m
 # set -x
 
 quiet=false
+gerrit_automatic_configuration=true
 current_dir="$(pwd)"
+
+git_checkout_cmd="git checkout "
+git_fetch_cmd="git fetch "
+git_clone_cmd="git clone "
+git_rebase_cmd="git rebase "
 
 required_helper=('git' 'grep' 'find' 'xargs' 'pwd' 'wc')
 
@@ -28,18 +34,16 @@ patch=0
 
 show_help() {
 cat << EOF
-Usage: ${0##*/} [-v] [-d DIRECTORY]
+Usage: ${0##*/} [-h?gpqv] [-d DIRECTORY]
 
 Update all local GIT working copies or clone GIT repositories if the GIT
-repository is defined in >REPO_NAMES< but not cloned to
->DIR_NAME</local directory.
-
-Use >`pwd`< if >DIR_NAME< environment variable and the directory argument
-are empty.
+repository is defined in >REPO_NAMES< but not cloned to >DIR_NAME</local directory.
 
     -h|-?         display this help and exit.
     -d DIRECTORY  directory contains the repositories list and branch name file ('${current_dir}').
+    -g            disable automatic "gerrit" configuration
     -p            execute patch script after update
+    -q            quiet modus. View only summary of changed files and pending commits for repository.
     -v            verbose mode. Can be used multiple times for increased verbosity.
 EOF
 }
@@ -64,16 +68,20 @@ check_required_helper() {
 # @see: http://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash#192266
 # @see: http://mywiki.wooledge.org/BashFAQ/035#getopts
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
-while getopts "d:pvh?" opt;
+while getopts "d:gpqvh?" opt;
 do
   case "$opt" in
     d)  DIR_NAME="$OPTARG"
+    ;;
+    g)  gerrit_automatic_configuration=false
     ;;
     h|\?)
       show_help
       exit 0
     ;;
     p)  patch=1
+    ;;
+    q)  quiet=true
     ;;
     v)  verbose=$((verbose + 1))
     ;;
@@ -91,6 +99,21 @@ REPO_SERVER_URL_NAMES=(${1})
 [ 0 = ${#REPO_SERVER_URL_NAMES[@]} ] && . git_repositories.sh
 [ 0 = ${#REPO_SERVER_URL_NAMES[@]} ] && echo "Not empty >REPO_NAMES< expected" && exit 1 || true
 
+# configure git commands
+if [ true == $quiet ]
+  then
+    git_checkout_cmd="${git_checkout_cmd} -q "
+    git_fetch_cmd="${git_fetch_cmd} -q "
+    git_clone_cmd="${git_clone_cmd} -q "
+    git_rebase_cmd="${git_rebase_cmd} -q "
+fi
+if [ 0 -lt $verbose ]
+  then
+    [ 1 -lt $verbose ] && git_fetch_cmd="${git_fetch_cmd} -v "
+    git_clone_cmd="${git_clone_cmd} -v "
+    git_rebase_cmd="${git_rebase_cmd} -v "
+fi
+
 cd "${DIR_NAME}"
 
 # update or clone GIT repositories with specific branch
@@ -105,31 +128,34 @@ do
   [ -z "${repo_url}" ] && repo_url="${DEFAULT_GIT_SERVER_URL}/${repo_name}"
   # normalize repo name like: thirdparty/org.apche into: thirdparty_org.apache
   local_dir=${repo_name//[^a-zA-Z0-9_\.]/_}
-  echo ''
+  [ false == $quiet ] && echo ''
 
   # check already cloned repo
   if [ ! -d "${local_dir}/.git" ]
     then
-      echo "[${counter}/${size}] clone: ${repo_name} to: ${DIR_NAME}/${local_dir}"
+      echo "[${counter}/${size}] clone: ${repo_url} to: ${DIR_NAME}/${local_dir}"
       cd "${DIR_NAME}";
       if [ -d "${local_dir}" ]
         then
           cd "${local_dir}"
           local_dir='.'
       fi
-      git clone ${repo_url} ${local_dir} || true
+      ${git_clone_cmd} ${repo_url} ${local_dir}
   fi
+  [ ! -d "$local_dir" ] && echo "local working copy: ${local_dir} not found." && exit 1 || true
   pushd "${local_dir}" 2>&1>/dev/null
 
   # get actual repo state and switch to branch if possible
   echo "[${counter}/${size}] update: ${repo_name} and switch to branch: ${BRANCH_NAME}"
-  git fetch --all --prune;
-  if [ "" != "$(git branch --remote --list origin/${BRANCH_NAME})" ]
+  ${git_fetch_cmd}  --all --prune
+  if [ ! -z "$(git branch --remote --list origin/${BRANCH_NAME})" ]
     then
-    git checkout -B ${BRANCH_NAME} -t -f origin/${BRANCH_NAME};
-    git fetch;
-    git rebase origin/${BRANCH_NAME};
+      ${git_checkout_cmd} -B ${BRANCH_NAME} -t -f origin/${BRANCH_NAME};
+      ${git_fetch_cmd};
+      ${git_rebase_cmd} origin/${BRANCH_NAME};
   fi
+
+  [ false == $gerrit_automatic_configuration ] && popd 2>&1 > /dev/null && counter=$((counter + 1)) && continue
 
   git_remote_origin_url=$(git config --local --get "remote.origin.url")
 
@@ -164,39 +190,48 @@ do
       ssh_cmd="${ssh_cmd} ${server_name} gerrit version"
       if `${ssh_cmd} > /dev/null 2>&1`;
         then
+          [ false == $quiet ] && echo "[${counter}/${size}] check gerrit configuration: ${repo_name}"
           git_dir=$(git rev-parse --git-dir)
           # check and configure Change-Id handling
           if [ "true" != "`git config --local --bool --get gerrit.createchangeid`" ]
             then
+              [ 0 -lt $verbose ] && echo "add config: 'gerrit.createchangeid' 'true'"
               git config --add "gerrit.createchangeid" "true"
           fi
           # check and configure branch refspecs
           if [ "HEAD:refs/for/${BRANCH_NAME}" != "`git config --local --get remote.origin.push`" ]
             then
+              [ 0 -lt $verbose ] && echo "add config: 'remote.origin.push' 'HEAD:refs/for/${BRANCH_NAME}'"
               git config --add "remote.origin.push" "HEAD:refs/for/${BRANCH_NAME}"
           fi
           # check and download gerrit commit-msg hook
           if [ ! -f "${git_dir}/hooks/commit-msg" ]
             then
+              [ 0 -lt $verbose ] && echo "configure 'commit-msg' hook"
               # TODO: maybe check remote gerrit version to avoid download from
               # gerrit-review.googlesource.com
               if [ "#" != "`git config --get core.commentchar`" ]
                 then
                   # download commit-msg hook archive to temp file
+                  template_url="https://gerrit-review.googlesource.com/cat/58839,2,gerrit-server/src/main/resources/com/google/gerrit/server/tools/root/hooks/commit-msg%5E0"
+                  [ 1 -lt $verbose ] && echo "download 'commit-msg' hook template from: ${template_url}"
                   tmp_file_name="$(tempfile).zip"
-                  wget -q -nv -O ${tmp_file_name} \
-                    https://gerrit-review.googlesource.com/cat/58839,2,gerrit-server/src/main/resources/com/google/gerrit/server/tools/root/hooks/commit-msg%5E0
+                  wget -q -nv -O ${tmp_file_name} ${template_url}
                   # extract commit-msg file from archive and delete archive
                   file_name="$(unzip -M ${tmp_file_name} -d /tmp | grep commit-msg | cut -d':' -f2 | tr -d [:blank:] && rm ${tmp_file_name} )"
                   # replace content of .git/hooks/commit-msg with content of
                   # downloaded commit-msg file and remove downloaded commit-msg
                   [ -f "${file_name}" ] && cat ${file_name} > ${git_dir}/hooks/commit-msg && rm ${file_name}
-              else
-                # download commit-msg if available
-                scp_cmd="${scp_cmd} ${server_name}:hooks/commit-msg ${git_dir}/hooks/"
-                ${scp_cmd} > /dev/null 2>&1 || true
+                else
+                  # download commit-msg if available
+                  template_url="${server_name}:hooks/commit-msg ${git_dir}/hooks/"
+                  [ 1 -lt $verbose ] && echo "download 'commit-msg' hook template from: ${template_url}"
+                  scp_cmd="${scp_cmd} ${template_url}"
+                  ${scp_cmd} > /dev/null 2>&1 || true
               fi
           fi
+        else
+          [ 0 -lt $verbose ] && echo "[${counter}/${size}] ${repo_name} is not a gerrit managed repository."
       fi
   fi
   popd 2>&1 > /dev/null;
