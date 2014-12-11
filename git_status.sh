@@ -55,18 +55,15 @@ OPTIND=1         # Reset in case getopts has been used previously in the shell.
 while getopts "d:h?qv" opt;
 do
   case "$opt" in
-    d)
-      DIR_NAME="$OPTARG"
+    d)  DIR_NAME="$OPTARG"
     ;;
     h|\?)
       show_help
       exit 0
     ;;
-    q)
-      quiet=true
+    q)  quiet=true
     ;;
-    v)
-      verbose=$((verbose + 1))
+    v)  verbose=$((verbose + 1))
     ;;
   esac
 done
