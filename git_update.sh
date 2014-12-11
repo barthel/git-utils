@@ -26,7 +26,7 @@ git_fetch_cmd="git fetch "
 git_clone_cmd="git clone "
 git_rebase_cmd="git rebase "
 
-required_helper=('git' 'grep' 'find' 'xargs' 'pwd' 'wc')
+required_helper=('git' 'grep' 'find' 'xargs' 'pwd' 'wc' 'script')
 
 [ -z ${verbose} ] && verbose=0
 
@@ -134,13 +134,14 @@ do
   if [ ! -d "${local_dir}/.git" ]
     then
       echo "[${counter}/${size}] clone: ${repo_url} to: ${DIR_NAME}/${local_dir}"
-      cd "${DIR_NAME}";
       if [ -d "${local_dir}" ]
         then
-          cd "${local_dir}"
-          local_dir='.'
+          pushd "${local_dir}" 2>&1>/dev/null
+          [ true == $quiet ] && script --quiet --append --return --command "${git_clone_cmd} ${repo_url} ." /dev/null 2>&1 > /dev/null || ${git_clone_cmd} ${repo_url} .
+          popd 2>&1 > /dev/null
+        else
+          [ true == $quiet ] && script --quiet --append --return --command "${git_clone_cmd} ${repo_url} ${local_dir}" /dev/null 2>&1 > /dev/null || ${git_clone_cmd} ${repo_url} ${local_dir}
       fi
-      ${git_clone_cmd} ${repo_url} ${local_dir}
   fi
   [ ! -d "$local_dir" ] && echo "local working copy: ${local_dir} not found." && exit 1 || true
   pushd "${local_dir}" 2>&1>/dev/null
