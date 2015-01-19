@@ -213,6 +213,8 @@ do
                   scp_cmd="${scp_cmd} ${template_url}"
                   ${scp_cmd} > /dev/null 2>&1 || true
               fi
+              // set executable bit on commit hook
+              chmod +x ${git_dir}/hooks/commit-msg
           fi
         else
           [ 0 -lt $verbose ] && echo "[${counter}/${size}] ${repo_name} is not a gerrit managed repository."
