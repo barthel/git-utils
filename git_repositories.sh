@@ -61,6 +61,7 @@ shift $((OPTIND-1))
 
 if [ 0 = ${#REPO_NAMES[@]} ]
   then
+    [ ! -z "${DIR_NAME}" ] && pushd "${DIR_NAME}" > /dev/null 2>&1 || true
     # check if the current directory is a git repository
     if `git rev-parse --git-dir > /dev/null 2>&1`;
       then
@@ -72,7 +73,8 @@ if [ 0 = ${#REPO_NAMES[@]} ]
         REPO_NAMES=("${git_remote_origin_path}")
         REPO_SERVER_URL_NAMES=("${git_remote_origin_path} ${git_remote_origin_url}")
         DIR_NAME="$(dirname ${top_level})"
-      else
+    else
+      popd > /dev/null 2>&1
       # directory name
       if [ -z "${DIR_NAME}" ]
         then
