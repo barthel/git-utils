@@ -12,7 +12,7 @@ set -m
 # set -x
 
 git_status_cmd="git status "
-quiet=false
+quiet=0
 current_dir="$(pwd)"
 
 [ -z ${verbose} ] && verbose=0
@@ -44,7 +44,7 @@ do
       show_help
       exit 0
     ;;
-    q)  quiet=true
+    q)  quiet=$((quiet +1 ))
     ;;
     v)  verbose=$((verbose + 1))
     ;;
@@ -75,10 +75,10 @@ do
   if [ -d "${local_dir}" ]
     then
       pushd "${local_dir}" 2>&1 > /dev/null;
-      pending_commits=`git log --format=oneline ${BRANCH_NAME} ^origin/${BRANCH_NAME} | wc -l`;
+      pending_commits=$(git log --format=oneline ${BRANCH_NAME} ^origin/${BRANCH_NAME} | wc -l);
       echo -n "[${counter}/${size}] check status of ${repo}: ";
-      [ false == ${quiet} ] && echo "" && ${git_status_cmd} || echo -e "\t#$(${git_status_cmd} | wc -l) #${pending_commits}"
-      [[ 0 != ${pending_commits} && false == ${quiet} && 0 = ${verbose} ]] && echo " MP pending commits: ${pending_commits}";
+      [ 0 -eq ${quiet} ] && echo "" && ${git_status_cmd} || echo -e "\t#$(${git_status_cmd} | wc -l) #${pending_commits}"
+      [[ 0 -ne ${pending_commits} && 0 -eq ${quiet} && 0 -eq ${verbose} ]] && echo " MP pending commits: ${pending_commits}";
   fi
   popd 2>&1 > /dev/null;
   counter=$((counter + 1))
