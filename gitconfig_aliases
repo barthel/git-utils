@@ -1,0 +1,29 @@
+[alias]
+  ## global
+  # Shows the email address used for commits.
+  iam = !git config --get user.email
+  # Get actual branch of current git repository.
+  branchname = rev-parse --abbrev-ref HEAD
+  # Add a new alias to global config.
+  alias = "!sh -c '[ $# = 2 ] && git config --global alias.\"$1\" \"$2\" && exit 0 || echo \"usage: git alias <new alias> <original command>\" >&2 && exit 1' -"
+  # Pull and rebase changes and view change log.
+  up = ! sh -c 'git pull --rebase && git log --pretty=format:\"%Cred%H%Creset %s %Cgreen(%ai [%ci]) %C(bold blue)<%an>%Creset\" ORIG_HEAD..'
+  ## log
+  # Show commit history as a colored graph.
+  graph = log --graph --oneline --pretty=format:'%Cred%h%Creset-%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
+  # A nice git log with branches shown as railroads.
+  tree = log --oneline --graph --decorate --all
+  # List all my commits since yesterday
+  daily = !git log --pretty=format:\"%x20%cD%x20%x20%H%x20%s\" --all --since '1 day ago' --regexp-ignore-case --committer $(git iam)
+  # List all my commits since last week.
+  week = !git log --pretty=format:\"%x20%cD%x20%x20%H%x20%s\" --all --since '1 week ago' --regexp-ignore-case --committer $(git iam)
+  ## issue based
+  # Show all commits with the given issue id(s). 'git issue "0815\|4711"'
+  issue = !sh -c 'ISSUE_NUMBER=$1 && shift 1 && git log --pretty=format:\"*%x20%H%x20%s\" --regexp-ignore-case --grep=\"$ISSUE_NUMBER\" $@' -
+  # like 'issue' but extended with commit date and time
+  issue-with-time = !sh -c 'git issue $@ --pretty=format:\"*%x20%H%x20%cD%x20%x20%s\"' -
+  # like 'issue' in reverse order for easier cherry-pick. formt: *[space]<commit-hash>[space]<commit-message>
+  #issue-cherry-pick-list = !sh -c 'git issue $@ --pretty=format:\"%ct%x09*%x20%H%x20%s\" | sort --key=1.1,2.1 | cut -f 2' -
+  issue-cherry-pick-list = !sh -c 'git issue $@ --reverse --pretty=format:\"*%x20%H%x20%s\"' -
+  # like 'issue' but shows all affected files instead of the commit list
+  issue-files-only = !sh -c 'git issue $@ --pretty=format: --name-only | grep \"\\w\" | sort | uniq | xargs -r file -Nn -- | grep -v ERROR | cut -d\":\" -f1' -
