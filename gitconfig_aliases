@@ -9,6 +9,10 @@
   iam = !git config --get user.email
   # Get actual branch of current git repository.
   branchname = rev-parse --abbrev-ref HEAD
+  # Get origin (push-) url
+  origin-host-url = !sh -c 'pushurl=$(git config --local --get remote.origin.pushurl) echo ${pushurl:-$(git config --local --get remote.origin.url)}' -
+  # Get host name of origin (push-) url
+  origin-host-name = !git origin-host-url | sed 's|^.*[@]\\(.*\\)[/].*$|\\1|'
   # Add a new alias to global config.
   alias = "!sh -c '[ $# = 2 ] && git config --global alias.\"$1\" \"$2\" && exit 0 || echo \"usage: git alias <new alias> <original command>\" >&2 && exit 1' -"
   # Pull and rebase changes and view change log.
