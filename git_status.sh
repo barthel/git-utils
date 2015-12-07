@@ -1,6 +1,8 @@
 #!/bin/bash
 #
-# Check the status of a list of local GIT working copies.
+# Check the status of local GIT working copies.
+#
+# Show/count untracked changes (pending changes), pending commits and available stash entries.
 #
 # use: DIR_NAME fill with pwd if empty
 # use: REPO_NAMES break if empty
@@ -11,7 +13,9 @@
 set -m
 # set -x
 
-git_status_cmd="git status "
+git_cmd="git --no-pager "
+git_status_cmd="${git_cmd} status "
+git_stash_list_cmd="${git_cmd} stash list "
 quiet=0
 current_dir="$(pwd)"
 
@@ -74,13 +78,18 @@ do
   local_dir=${repo//[^a-zA-Z0-9_\.]/_}
   if [ -d "${local_dir}" ]
     then
-      pushd "${local_dir}" 2>&1 > /dev/null;
-      pending_commits=$(git log --format=oneline ${BRANCH_NAME} ^origin/${BRANCH_NAME} | wc -l);
       echo -n "[${counter}/${size}] check status of ${repo}: ";
-      [ 0 -eq ${quiet} ] && echo "" && ${git_status_cmd} || echo -e "\t#$(${git_status_cmd} | wc -l) #${pending_commits}"
+      pushd "${local_dir}" > /dev/null 2>&1;
+      pending_changes=$(${git_status_cmd} -s --porcelain | wc -l);
+      pending_commits=$(${git_cmd} log --format=oneline ${BRANCH_NAME} ^origin/${BRANCH_NAME} | wc -l);
+      pending_stash_entries=$(${git_stash_list_cmd} | grep " ${BRANCH_NAME}:" | wc -l);
+      # echo -n "[${counter}/${size}] check status of ${repo}: ";
+      [ 0 -eq ${quiet} ] && echo "" && ${git_status_cmd} || echo -e "\t#${pending_changes} #${pending_commits} #${pending_stash_entries}"
       [[ 0 -ne ${pending_commits} && 0 -eq ${quiet} && 0 -eq ${verbose} ]] && echo " MP pending commits: ${pending_commits}";
+      [[ 0 -ne ${pending_stash_entries} && 0 -eq ${quiet} && 0 -eq ${verbose} ]] && echo " MS pending stash entries: ${pending_stash_entries}";
+      [[ 0 -ne ${pending_stash_entries} && 0 -ne ${verbose} ]] && ${git_stash_list_cmd}
+      popd > /dev/null 2>&1;
   fi
-  popd 2>&1 > /dev/null;
   counter=$((counter + 1))
 done
 cd "${current_dir}"
