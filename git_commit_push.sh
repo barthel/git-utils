@@ -1,6 +1,12 @@
 #!/bin/bash
 #
+# Evaluate the status of lokal GIT repositories list with git_status.sh and add changes, commit with
+# passed message and push to the remote GIT repository.
+#
+set -m
+# set -x
 
+# commit message
 message=""
 
 ### CMD ARGS
@@ -24,8 +30,8 @@ repo_list=$(git_status.sh | grep -B1 "^.M .*" | grep "^\[" | cut -d' ' -f5 | cut
 for repo in ${repo_list[@]}
 do
   echo "${repo}"
-#  continue;
-  pushd ${repo} >> /dev/null 2>&1;
+  local_dir=${repo//[^a-zA-Z0-9_\.]/_}
+  pushd ${local_dir} >> /dev/null 2>&1;
   git add -u;
   git commit -m"${message}";
   git fetch;
