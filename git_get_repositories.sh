@@ -6,6 +6,9 @@
 #
 # Write the repository name and the repository url to standard out:
 # <repo name><TAB><repo url>
+#
+# List projects on gerrit: gerrit ls-projects
+# @see: https://gerrit.googlecode.com/svn/documentation/2.0/cmd-ls-projects.html
 
 # activate job monitoring
 # @see: http://www.linuxforums.org/forum/programming-scripting/139939-fg-no-job-control-script.html
@@ -25,7 +28,7 @@ Required non empty >DIR_NAME< environment variable or directory
 argument.
 
     -h|-?         display this help and exit.
-    -c COMMAND    command to execute on remote git repository server.
+    -c COMMAND    command to execute on remote git repository server (e.g. "gerrit ls-projects").
     -s SERVER_URL server url to remote git repository server.
     -v            verbose mode. Can be used multiple times for increased verbosity.
 
