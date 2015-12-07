@@ -61,9 +61,9 @@ shift $((OPTIND-1))
 
 if [ -z "${BRANCH_NAME}" ]
   then
-    if `git rev-parse --git-dir > /dev/null 2>&1`;
+    if $(git rev-parse --git-dir > /dev/null 2>&1);
       then
-        BRANCH_NAME="`git rev-parse --abbrev-ref HEAD`"
+        BRANCH_NAME="$(git rev-parse --abbrev-ref HEAD)"
       else
         # directory name
         if [ -z "${DIR_NAME}" ]
@@ -74,11 +74,11 @@ if [ -z "${BRANCH_NAME}" ]
         # check file containing the branch name
         if [ ! -f "${DIR_NAME}/${branch_name_file}" ]
           then
-            current_directory="`pwd`"
+            current_directory="$(pwd)"
             cd "${DIR_NAME}"
-            if `git rev-parse --git-dir > /dev/null 2>&1`;
+            if $(git rev-parse --git-dir > /dev/null 2>&1);
               then
-                BRANCH_NAME="`git rev-parse --abbrev-ref HEAD`"
+                BRANCH_NAME="$(git rev-parse --abbrev-ref HEAD)"
                 cd "${current_directory}"
             else
               echo "File >${DIR_NAME}/${branch_name_file}<, >BRANCH_NAME< or git repository is required."

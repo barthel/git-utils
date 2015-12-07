@@ -63,15 +63,17 @@ if [ 0 = ${#REPO_NAMES[@]} ]
   then
     [ ! -z "${DIR_NAME}" ] && pushd "${DIR_NAME}" > /dev/null 2>&1 || true
     # check if the current directory is a git repository
-    if `git rev-parse --git-dir > /dev/null 2>&1`;
+    if $(git rev-parse --git-dir > /dev/null 2>&1);
       then
         git_remote_origin_url="$(git config --get remote.origin.url)"
         top_level="$(git rev-parse --show-toplevel)"
-        git_remote_origin_host_port_path="${git_remote_origin_url##*\/\/}"
-        git_remote_origin_path="${git_remote_origin_host_port_path#*\/}"
+        #git_remote_origin_host_port_path="${git_remote_origin_url##*\/\/}"
+        #git_remote_origin_path="${git_remote_origin_host_port_path#*\/}"
 
-        REPO_NAMES=("${git_remote_origin_path}")
-        REPO_SERVER_URL_NAMES=("${git_remote_origin_path} ${git_remote_origin_url}")
+        #REPO_NAMES=("${git_remote_origin_path}")
+        #REPO_SERVER_URL_NAMES=("${git_remote_origin_path} ${git_remote_origin_url}")
+        REPO_NAMES=("$(basename ${top_level})")
+        REPO_SERVER_URL_NAMES=("${REPO_NAMES[0]} ${git_remote_origin_url}")
         DIR_NAME="$(dirname ${top_level})"
     else
       popd > /dev/null 2>&1
@@ -93,7 +95,7 @@ if [ 0 = ${#REPO_NAMES[@]} ]
             do
               [ ! -z "${line}" ] && REPO_SERVER_URL_NAMES[${#REPO_SERVER_URL_NAMES[@]}]="${line}"
             done < ${DIR_NAME}/${repo_list_file}
-          REPO_NAMES=(`cat ${DIR_NAME}/${repo_list_file}|cut -f1`)
+          REPO_NAMES=($(cat ${DIR_NAME}/${repo_list_file}|cut -f1))
       fi
     fi
 fi

@@ -1,9 +1,6 @@
 #!/bin/sh
 #
-# Push changes: git push --force --tags origin 'refs/heads/*'
 # Got from: https://help.github.com/articles/changing-author-info/
-
-
 set -m
 set -e
 # set -x
