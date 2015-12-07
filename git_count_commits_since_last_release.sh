@@ -12,7 +12,6 @@
 set -m
 # set -x
 
-release_commiter_name="ic_jenkins"
 release_commit_eyecatcher='\[maven-release-plugin\]'
 regexp_release_commit='.*'${release_commit_eyecatcher}'.*release'
 
@@ -76,7 +75,7 @@ size=${#REPO_NAMES[@]}
 for repo in "${REPO_NAMES[@]}"
 do
   # normalize repository name
-  local_dir=${repo//[^a-zA-Z0-9_\.]/_}
+  local_dir=${repo//[^a-zA-Z0-9_\-\.]/_}
   if [ -d "${DIR_NAME}/${local_dir}" ]
     then
       counter_commits=0
@@ -97,11 +96,11 @@ do
         # get the last release commit based on commit message regular expression
         # and the name of the committer
         IFS=$'\t'
-        last_release_commit=($(git log --pretty=format:"%H%x09\"%s\"" --all --max-count=1 --regexp-ignore-case --committer ${release_commiter_name} --branches=${BRANCH_NAME} --basic-regexp --grep "${regexp_release_commit}" -- ${directory}))
+        last_release_commit=($(git log --pretty=format:"%H%x09\"%s\"" --max-count=1 --regexp-ignore-case --basic-regexp --grep "${regexp_release_commit}" --remotes=${BRANCH_NAME} origin/${BRANCH_NAME} -- ${directory}))
         # check the count of commit since the ${last_release_commit} commit
         # hash and ignore other release commits (like the next iteration commit)
         # instead
-        pending_commits=`git log --pretty=format:"%H%x09\"%s\"" ${BRANCH_NAME}  ${last_release_commit[0]}.. -- ${directory} | grep -v "${release_commit_eyecatcher}" | wc -l`
+        pending_commits=$(git log --pretty=format:"%H%x09\"%s\"" --reverse ${BRANCH_NAME}  ${last_release_commit[0]}.. -- ${directory} | grep -v "${release_commit_eyecatcher}" | wc -l)
         counter_commits=$((counter_commits + pending_commits))
         if [[ 0 -lt "${pending_commits}" && false == ${quiet} ]]
           then
