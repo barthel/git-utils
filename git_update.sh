@@ -35,9 +35,14 @@ git_fetch_cmd="${git_cmd} fetch "
 git_clone_cmd="${git_cmd} clone "
 git_rebase_cmd="${git_cmd} rebase "
 git_stash_save_cmd="${git_cmd} stash save "
+git_stash_clear="${git_cmd} stash clear "
 git_config_cmd="${git_cmd} config "
+git_clean_cmd="${git_cmd} clean -fX "
+git_gc_cmd="${git_cmd} gc "
+
 
 [ -z ${verbose} ] && verbose=0
+[ -z ${clean} ] && clean=0
 
 patch=0
 
@@ -58,6 +63,7 @@ repository is defined in >REPO_NAMES< but not cloned to >DIR_NAME</local directo
 
     -h|-?                      display this help and exit.
     -d DIRECTORY               directory contains the repositories list and branch name file ('${current_dir}').
+    -c                         clean. Can be used multiple times for increased the cleaning steps.
     -i FILENAME or "${default}"   insert include statement in GIT repository configuration ("${default}" use '${default_include_gitconfig_file}<git server name>')
     -g                         disable automatic "gerrit" configuration
     -p                         execute patch script after update
@@ -103,6 +109,8 @@ _config_quiet_mode_cmds() {
       git_clone_cmd="${git_clone_cmd} -q "
       git_rebase_cmd="${git_rebase_cmd} -q "
       git_stash_save_cmd="${git_stash_save_cmd} -q "
+      git_clean_cmd="${git_clean_cmd} -q "
+      git_gc_cmd="${git_gc_cmd} --quiet "
   fi
 }
 
@@ -180,6 +188,28 @@ _git_fetch_and_switch_to_branch() {
   return $?
 }
 
+# Clean GIT repository.
+#
+#
+# @param #1: repository name
+_git_clean_repository() {
+  repo_name="${1}"
+  log_prefix="${2}"
+
+  echo "${log_prefix} clean: ${repo_name}"
+  [ 0 -lt ${clean} ] && ${git_clean_cmd} --force
+  [ 0 != $? ] && return $? || true
+  if [ 1 -lt ${clean} ]
+    then
+      [ 2 -lt ${clean} ] && ${git_stash_clear} || true
+      [ 0 != $? ] && return $? || true
+      [ 2 -lt ${clean} ] && ${git_gc_cmd} --aggressive || ${git_gc_cmd}
+      [ 0 != $? ] && return $? || true
+  fi
+  return $?
+}
+
+
 # Set GIT configuration 'include.path' with passed (param #1) file.
 # Resolve 'default' to default name schema: "${default_include_gitconfig_file_name_prefix}${server_name}" like
 # e.g.: ~/.gitconfig_my.server.tld
@@ -189,7 +219,7 @@ _git_fetch_and_switch_to_branch() {
 # @param #2: repository name
 # @param #3: logging prefix (optional)
 #
-  _git_configure_repository() {
+_git_configure_repository() {
   include_file="${1}"
   repo_name="${2}"
   log_prefix="${3}"
@@ -342,9 +372,11 @@ _gerrit_commit_msg_configuration() {
 # @see: http://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash#192266
 # @see: http://mywiki.wooledge.org/BashFAQ/035#getopts
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
-while getopts "d:gi:pqvh?" opt;
+while getopts "cd:gi:pqvh?" opt;
 do
   case "$opt" in
+    c)  clean=$((clean + 1))
+    ;;
     d)  DIR_NAME="$OPTARG"
     ;;
     g)  gerrit_automatic_configuration=false
@@ -411,6 +443,9 @@ do
 
   # get actual repo state and switch to branch if possible
   _git_fetch_and_switch_to_branch "${repo_name}" "${log_prefix}"
+  [ 0 != $? ] && exit $? || true
+
+  _git_clean_repository "${repo_name}" "${log_prefix}"
   [ 0 != $? ] && exit $? || true
 
   _git_configure_repository "${include_gitconfig_file}" "${repo_name}" "${log_prefix}"
