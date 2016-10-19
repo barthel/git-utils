@@ -20,7 +20,7 @@ set -m
 # missing tolls on MacOS X
 # mktemp / tempfile
 # curl / wget
-required_helper=('hash' 'date' 'git' 'mktemp' 'cat' 'grep' 'cut' 'sed' 'curl' 'ssh' 'readlink')
+required_helper=('command' 'date' 'git' 'mktemp' 'cat' 'grep' 'cut' 'sed' 'curl' 'ssh' 'readlink')
 
 quiet=false
 gerrit_automatic_configuration=true
@@ -82,7 +82,7 @@ _check_required_helper() {
    for executable in "${helper[@]}";
    do
      # @see: http://stackoverflow.com/questions/592620/how-to-check-if-a-program-exists-from-a-bash-script
-     if hash ${executable} 2>/dev/null
+     if command -v ${executable}
      then
        [ 0 -lt ${verbose} ] && echo "found required executable: ${executable}"
      else
@@ -201,7 +201,7 @@ _git_clean_repository() {
   [ 0 != $? ] && return $? || true
   if [ 1 -lt ${clean} ]
     then
-      [ 2 -lt ${clean} ] && ${git_stash_clear} || true
+      [ 1 -lt ${clean} ] && ${git_stash_clear} || true
       [ 0 != $? ] && return $? || true
       [ 2 -lt ${clean} ] && ${git_gc_cmd} --aggressive || ${git_gc_cmd}
       [ 0 != $? ] && return $? || true
@@ -350,6 +350,7 @@ _gerrit_commit_msg_configuration() {
           template_url="https://gerrit-review.googlesource.com/cat/58839,2,gerrit-server/src/main/resources/com/google/gerrit/server/tools/root/hooks/commit-msg%5E0"
           [ 1 -lt ${verbose} ] && echo "download 'commit-msg' hook template from: ${template_url}"
           tmp_file_name="$(${tempfile_cmd}).zip"
+          [ 2 -lt ${verbose} ] && echo "download 'commit-msg' hook template via: ${download_cmd} ${tmp_file_name} ${template_url}"
           ${download_cmd} ${tmp_file_name} ${template_url}
           # extract commit-msg file from archive and delete archive
           file_name="$(unzip -M ${tmp_file_name} -d /tmp | grep commit-msg | cut -d':' -f2 | tr -d [:blank:] && rm ${tmp_file_name} )"
@@ -410,8 +411,8 @@ _check_required_helper "${required_helper[@]}"
 [ 0 = ${#REPO_SERVER_URL_NAMES[@]} ] && . git_repositories.sh
 [ 0 = ${#REPO_SERVER_URL_NAMES[@]} ] && echo "Not empty >REPO_NAMES< expected" && exit 1 || true
 
-[ $(hash wget > /dev/null 2>&1) ] && true || download_cmd="curl -sSo "
-[ $(hash tempfile > /dev/null 2>&1) ] && true || tempfile_cmd="mktemp tmp.XXXXXX "
+[ $(command -v wget) ] && true || download_cmd="curl -sSo "
+[ $(command -v tempfile) ] && true || tempfile_cmd="mktemp tmp.XXXXXX "
 
 # configure git commands
 _config_quiet_mode_cmds
