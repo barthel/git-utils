@@ -20,7 +20,7 @@ set -m
 # missing tolls on MacOS X
 # mktemp / tempfile
 # curl / wget
-required_helper=('command' 'date' 'git' 'mktemp' 'cat' 'grep' 'cut' 'sed' 'curl' 'ssh' 'readlink')
+required_helper=('date' 'git' 'mktemp' 'cat' 'grep' 'cut' 'sed' 'curl' 'ssh' 'readlink')
 
 quiet=false
 gerrit_automatic_configuration=true
@@ -82,7 +82,7 @@ _check_required_helper() {
    for executable in "${helper[@]}";
    do
      # @see: http://stackoverflow.com/questions/592620/how-to-check-if-a-program-exists-from-a-bash-script
-     if command -v ${executable}
+     if [ "" != "$(command -v ${executable})" ]
      then
        [ 0 -lt ${verbose} ] && echo "found required executable: ${executable}"
      else
