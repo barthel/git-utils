@@ -12,6 +12,7 @@
 set -m
 # set -x
 
+unset IFS
 release_commit_eyecatcher='\[maven-release-plugin\]'
 regexp_release_commit='.*'${release_commit_eyecatcher}'.*release'
 
@@ -109,6 +110,7 @@ do
             echo ""
         fi
       done
+      unset IFS
       [[ 0 -lt "${verbose}" || true == ${quiet} ]] && echo -e "\t#${counter_commits}" || true
   fi
   cd "${DIR_NAME}";

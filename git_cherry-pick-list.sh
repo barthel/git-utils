@@ -2,6 +2,9 @@
 #
 # Use argument as a file and cherry-pick all containing commit-hashes
 #
+
+unset IFS
+
 LIST_FILE="${1}"
 AUTO_RUN=1
 
@@ -15,6 +18,7 @@ echo "Cherry-picking all commits from file ${LIST_FILE} ..."
 
 IFS=$'\n'
 commit_list=(`cat "${LIST_FILE}"`)
+unset IFS
 
 counter=1
 size=${#commit_list[@]}
@@ -41,3 +45,4 @@ for commit in "${commit_list[@]}" ; do
 done
 echo "cherry picking of $size commits done."
 echo "use the following command to squash these commits: git rebase -i HEAD~$size"
+

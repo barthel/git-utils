@@ -16,6 +16,7 @@
 set -m
 # set -x
 
+unset IFS
 repo_list_file='.repositories'
 
 [ -z ${verbose} ] && verbose=0
@@ -96,6 +97,7 @@ if [ 0 = ${#REPO_NAMES[@]} ]
               [ ! -z "${line}" ] && REPO_SERVER_URL_NAMES[${#REPO_SERVER_URL_NAMES[@]}]="${line}"
             done < ${DIR_NAME}/${repo_list_file}
           REPO_NAMES=($(cat ${DIR_NAME}/${repo_list_file}|cut -f1))
+          unset IFS
       fi
     fi
 fi
