@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# Get current GIT branch name based on file or git repository
-# and store the branch name in BRANCH_NAME
+# Gets the current GIT branch name based on file or GIT repository
+# and exports the branch name as BRANCH_NAME environment variable.
 #
 # use: DIR_NAME
 #
@@ -20,10 +20,10 @@ show_help() {
 cat << EOF
 Usage: ${0##*/} [-vh?] [-f BRANCHNAMEFILE]
 
-Get current GIT branch name based on file or git repository
-and store the branch name in >BRANCH_NAME<.
+Gets the current GIT branch name based on file or GIT repository
+and exports the branch name as >BRANCH_NAME< environment variable.
 
-Required non empty >DIR_NAME< environment variable or directory
+Requires a non empty >DIR_NAME< environment variable or directory
 argument.
 
     -h|-?             display this help and exit.
