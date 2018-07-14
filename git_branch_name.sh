@@ -12,8 +12,6 @@
 set -m
 # set -x
 
-DEFAULT_GIT_SERVER_URL="ssh://git@git-server.icongmbh.de"
-
 branch_name_file='.branch_name'
 
 [ -z ${verbose} ] && verbose=0
