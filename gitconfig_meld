@@ -7,22 +7,28 @@
 # http://www.apache.org/licenses/LICENSE-2.0
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
+# Configures Meld (http://meldmerge.org/) for diff and merge operations.
+#
+# This file configures Meld using on macOS.
+# Meld should be installed via homebrew (https://brew.sh).
+#
 # Include this file in ~/.gitconfig via:
 # [include]
-#   path = /path/to/gitconfig_default
+#   path = /path/to/gitconfig_meld
 #
 # @see: http://git-scm.com/docs/git-config#_includes
 #
-[color]
-  ui = auto
-[branch]
-  autosetuprebase = always
+[diff]
+  tool = meld
+[difftool]
+  prompt = false
+[difftool "meld"]
+  trustExitCode = true
+  cmd = /usr/local/bin/meld \"$LOCAL\" \"$PWD/$REMOTE\"
 [merge]
-  conflictstyle = diff3
-  renormalize = true
-[core]
-  commentchar = $
-[push]
-  default = simple
-[rebase]
-	autoStash = true
+  tool = meld
+[mergetool]
+  prompt = false
+[mergetool "meld"]
+  trustExitCode = true
+  cmd = /usr/local/bin/meld --auto-merge \"$PWD/$LOCAL\" \"$PWD/$BASE\" \"$PWD/$REMOTE\" --output=\"$PWD/$MERGED\"

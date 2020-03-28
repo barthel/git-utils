@@ -1,3 +1,19 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# (c) barthel <barthel@users.noreply.github.com> https://github.com/barthel
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# http://www.apache.org/licenses/LICENSE-2.0
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+# Include this file in ~/.gitconfig via:
+[core]
+	excludesfile = ~/sources/github.com/barthel/git-utils/gitignore.global
+#
+# @see: https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreexcludesFile
+#
+
 # global gitignore file
 
 *.releaseBackup
