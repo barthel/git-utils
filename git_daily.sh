@@ -11,13 +11,13 @@
 set -m
 # set -x
 
-git_log_cmd="git --no-pager log --reverse --all --regexp-ignore-case --oneline --date=short "
+git_log_cmd="git --no-pager log --reverse --all --regexp-ignore-case --oneline "
 quiet=0
 current_dir="$(pwd)"
 since_date="$(date '+%Y-%m-%d' )"
 until_date=""
 
-[ -z ${verbose} ] && verbose=0
+[ -z "${verbose}" ] && verbose=0
 
 show_help() {
 cat << EOF
@@ -72,9 +72,12 @@ REPO_NAMES=(${1})
 
 [ "" = "${until_date}" ] && until_date="${since_date}"
 
-cd "${DIR_NAME}"
+cd "${DIR_NAME}" || exit 1
 
 [ 0 = ${quiet} ] && echo "date range since ${since_date} and until ${until_date}" || true
+
+[ 0 -lt ${verbose} ] && git_log_cmd+="  --date=iso " || git_log_cmd+="  --date=short "
+
 # actualize branches
 counter=1
 size=${#REPO_NAMES[@]}
@@ -83,31 +86,46 @@ do
   local_dir=${repo//[^a-zA-Z0-9_\.]/_}
   if [ -d "${local_dir}" ]
     then
-      pushd "${local_dir}" 2>&1 > /dev/null;
+      { pushd "${local_dir}" > /dev/null; }  2>&1 || exit 1;
       # Get GIT information incl. hash and separate with space
       # The hash will be used to evaluate duplicate entries (author date and commit date differs)
       # Evaluate git committer based on local repository instead of global
       git_iam="$(git config --get user.email)"
-      # get commit list incl. author date: [hash][ ][ ][author date][ ][commit message]
+      # starts log output wirth: [hash][ ]
+      git_log_format_prefix="%H%x20"
       # filter date range by awk
       awk_author_date_filter="\$2>=\"${since_date}\" && \$2<=\"${until_date}\""
-      git_author_date_log_output=$(${git_log_cmd} --pretty=format:%H%x20%x20%ad%x20%s --author=${git_iam} | awk "${awk_author_date_filter}")
+      # get commit list incl. author date: [hash][ ][ ][author timestamp]
+      git_author_log_format="${git_log_format_prefix}%x20%ad"
+      # append commit hash on verbose level > 1: [ ][hash]
+      [ 1 -lt ${verbose} ] && git_author_log_format+="%x20%H" || true
+      # append commit message at the end: [ ][commit message]
+      git_author_log_format+="%x20%s"
+      git_author_date_log_output=$(${git_log_cmd} --pretty=format:${git_author_log_format} --author=${git_iam} | awk "${awk_author_date_filter}")
 
       # get commit list by commit date
       since_date+="T00:00:00"
       until_date+="T23:59:59"
       git_log_cmd+=" --since=${since_date} --until=${until_date} "
-      # get commit list filtered by git itself with commit date: [hash][ ][ ][commit date][ ][commit message]
-      git_commit_log_output="$(${git_log_cmd} --pretty=format:%H%x20%x20%cd%x20%s --committer=${git_iam})"
+      # get commit list filtered by git itself with commit date: [hash][ ][ ][commit timestamp]
+      git_commit_log_format="${git_log_format_prefix}%x20%cd"
+      # append commit hash on verbose level > 1: [ ][hash]
+      [ 1 -lt ${verbose} ] && git_commit_log_format+="%x20%H" || true
+      # append commit message at the end: [ ][commit message]
+      git_commit_log_format+="%x20%s"
+      git_commit_log_output="$(${git_log_cmd} --pretty=format:${git_commit_log_format} --author=${git_iam})"
       [ 0 = ${quiet} ] && echo "[${counter}/${size}] ${repo}: " || true
-      # merge both lists, remove duplicates by commit hash, remove the commit hash and sort by date
+      # merge both lists, remove duplicates by first commit hash, remove the first commit hash and sort by date
       git_log_output="${git_author_date_log_output}"
       [[ "" != "${git_commit_log_output}" && "" != "${git_log_output}" ]] && git_log_output+='\n' || true
       git_log_output+=${git_commit_log_output}
-      [ "" != "${git_log_output}" ] && echo "$(echo -e "${git_log_output}" | awk '!x[$1]++' | cut -d' ' -f2- | sort)" || true
+      if [ "" != "${git_log_output}" ] 
+        then
+          echo -e "${git_log_output}" | awk '!x[$1]++' | sort -t' ' -k3,4 | cut -d' ' -f2-
+      fi
   fi
-  popd 2>&1 > /dev/null;
+  { popd > /dev/null; }  2>&1 || exit 1
   counter=$((counter + 1))
 done
-cd "${current_dir}"
+cd "${current_dir}" || exit 1
 #
