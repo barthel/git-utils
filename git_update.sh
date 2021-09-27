@@ -432,7 +432,7 @@ do
   # configure default repo url if empty
   [ -z "${repo_url}" ] && repo_url="${DEFAULT_GIT_SERVER_URL}/${repo_name}"
   # normalize repo name like: thirdparty/org.apche into: thirdparty_org.apache
-  local_dir=${repo_name//[^a-zA-Z0-9_\-\.]/_}
+  local_dir=${repo_name} # ${repo_name//[^a-zA-Z0-9_\-\.]/_}
   [ false == $quiet ] && echo ''
 
   # check already cloned repo

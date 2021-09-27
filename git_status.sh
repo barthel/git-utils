@@ -75,7 +75,7 @@ counter=1
 size=${#REPO_NAMES[@]}
 for repo in "${REPO_NAMES[@]}"
 do
-  local_dir=${repo//[^a-zA-Z0-9_\.]/_}
+  local_dir=${repo} # ${repo//[^a-zA-Z0-9_\.]/_}
   if [ -d "${local_dir}" ]
     then
       echo -n "[${counter}/${size}] check status of ${repo}: ";

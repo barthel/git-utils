@@ -76,7 +76,7 @@ size=${#REPO_NAMES[@]}
 for repo in "${REPO_NAMES[@]}"
 do
   # normalize repository name
-  local_dir=${repo//[^a-zA-Z0-9_\-\.]/_}
+  local_dir=${repo} # ${repo//[^a-zA-Z0-9_\-\.]/_}
   if [ -d "${DIR_NAME}/${local_dir}" ]
     then
       counter_commits=0
