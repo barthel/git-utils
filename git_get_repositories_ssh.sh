@@ -12,7 +12,7 @@
 
 # activate job monitoring
 # @see: http://www.linuxforums.org/forum/programming-scripting/139939-fg-no-job-control-script.html
-set -m
+# set -m
 # set -x
 
 [ -z ${verbose} ] && verbose=0
