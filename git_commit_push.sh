@@ -30,7 +30,7 @@ repo_list=$(git_status.sh | grep -B1 "^.M .*" | grep "^\[" | cut -d' ' -f5 | cut
 for repo in ${repo_list[@]}
 do
   echo "${repo}"
-  local_dir=${repo//[^a-zA-Z0-9_\.]/_}
+  local_dir=${repo} # ${repo//[^a-zA-Z0-9_\.]/_}
   pushd ${local_dir} >> /dev/null 2>&1;
   git add -u;
   git commit -m"${message}";
