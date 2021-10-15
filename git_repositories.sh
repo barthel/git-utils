@@ -19,7 +19,7 @@ set -m
 unset IFS
 repo_list_file='.repositories'
 
-[ -z ${verbose} ] && verbose=0
+[ -z "${verbose}" ] && verbose=0
 
 show_help() {
 cat << EOF
@@ -46,7 +46,7 @@ while getopts "f:vh?" opt;
 do
   case "$opt" in
     f)
-      repo_list_file="$(basename $OPTARG)"
+      repo_list_file="$(basename "$OPTARG")"
       ;;
     h|\?)
       show_help
@@ -62,7 +62,7 @@ shift $((OPTIND-1))
 
 if [ 0 = ${#REPO_NAMES[@]} ]
   then
-    [ ! -z "${DIR_NAME}" ] && pushd "${DIR_NAME}" > /dev/null 2>&1 || true
+    [ -n "${DIR_NAME}" ] && pushd "${DIR_NAME}" > /dev/null 2>&1 || true
     # check if the current directory is a git repository
     if $(git rev-parse --git-dir > /dev/null 2>&1);
       then
@@ -77,7 +77,7 @@ if [ 0 = ${#REPO_NAMES[@]} ]
         REPO_SERVER_URL_NAMES=("${REPO_NAMES[0]} ${git_remote_origin_url}")
         DIR_NAME="$(dirname ${top_level})"
     else
-      popd > /dev/null 2>&1
+      popd > /dev/null 2>&1 || exit
       # directory name
       if [ -z "${DIR_NAME}" ]
         then
@@ -92,16 +92,22 @@ if [ 0 = ${#REPO_NAMES[@]} ]
         else
           # @see: http://stackoverflow.com/questions/10984432/how-to-read-the-file-content-into-a-variable-in-one-go
           REPO_SERVER_URL_NAMES=()
+          REPO_NAMES=()
           while IFS= read -r line
             do
-              [ ! -z "${line}" ] && REPO_SERVER_URL_NAMES[${#REPO_SERVER_URL_NAMES[@]}]="${line}"
-            done < ${DIR_NAME}/${repo_list_file}
-          REPO_NAMES=($(cat ${DIR_NAME}/${repo_list_file}|cut -f1))
+              if [ -n "${line}" ]
+                then
+                # ignore commented lines
+                [[ ${line} =~ ^#.* ]] && continue
+                REPO_SERVER_URL_NAMES[${#REPO_SERVER_URL_NAMES[@]}]="${line}"
+                REPO_NAMES[${#REPO_NAMES[@]}]="$(echo "${line}" | cut -f1)"
+              fi
+            done < "${DIR_NAME}/${repo_list_file}"
           unset IFS
       fi
     fi
 fi
 
-[ "${verbose}" -gt 0 ] && echo "use repositories: ${REPO_NAMES[@]}" || true
+[ "${verbose}" -gt 0 ] && echo "use repositories: ${REPO_NAMES[*]}" || true
 
 #
