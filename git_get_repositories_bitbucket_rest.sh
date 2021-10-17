@@ -1,11 +1,19 @@
 #!/bin/bash
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# (c) barthel <barthel@users.noreply.github.com> https://github.com/barthel
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# http://www.apache.org/licenses/LICENSE-2.0
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
 # Get all repositories provided by a Bitbucket server via REST API.
 #
 # Write the repository name and the repository url to standard out:
 # <repo name><TAB><repo url>
 #
-# List projects of a project and the ssh connection:
+# List projects of a project and the REST connection:
 # @see: https://docs.atlassian.com/bitbucket-server/rest/7.16.0/bitbucket-rest.html#idp175
 
 # activate job monitoring
@@ -22,9 +30,6 @@ cat << EOF
 Usage: ${0##*/} [-h?v] -p PROJECT -s SERVER_URL [-u USER]
 
 Get all GIT repositories of a project provided by Bitbucket server via REST API.
-
-Required non empty >DIR_NAME< environment variable or directory
-argument.
 
     -h|-?         display this help and exit.
     -p PROJECT    the project key on Bitbucket server.
