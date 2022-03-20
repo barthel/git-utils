@@ -8,9 +8,10 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
 # Include this file in ~/.gitconfig via:
-[core]
-	excludesfile = ~/sources/github.com/barthel/git-utils/gitignore.global
+# [core]
+# 	excludesfile = <PATH OF CLONED REPOSITORY>/gitignore.global
 #
+# @see: https://github.com/barthel/git-utils/blob/master/doc/gitconfig.md
 # @see: https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreexcludesFile
 #
 

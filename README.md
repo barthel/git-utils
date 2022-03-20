@@ -5,7 +5,7 @@ Modularized configuration and helper scripts around [git][git]¹ usage with mult
 All these scripts are NOT speed optimized!
 I'm using these scripts often in my daily work, and they do what they have to do.
 
-## Requirements
+## 1. Requirements
 
 * [git][git]¹
 
@@ -22,7 +22,7 @@ All scripts are daily used with `GNU bash, version 3.2.57(1)-release (x86_64-app
 Each script checks the required tools and exits with an error if a required tool is not available.
 Please check the script documentation for additional and/or deviating requirements.
 
-## Install and Usage
+## 2. Install and Usage
 
 Clone this repository and add it to your `PATH` environment variable.
 
@@ -30,45 +30,18 @@ Most of these scripts has a _help_-option (`-h`, `-?`), a _quiet_-option (`-q`) 
 
 The _usage_ information will be displayed if a script will execute without any arguments or with a help-option (`-h`, `-?`).
 
-## Modularized git Configuration
+## 3. [Modularized git Configuration](./doc/gitconfig.md "doc/gitconfig.md")
 
-Create or modify your global git configuration file in your home directory (`~/.gitconfig`) like the following one.
-Replace `<PATH OF CLONED REPOSITORY>` with the path of this cloned git repository (e.g. `~/source/github.com/git-utils/`).
-
-`~/.gitconfig`:
-```gitconfig
-[core]
-	excludesfile = <PATH OF CLONED REPOSITORY>/gitignore.global
-[include]
-	path = <PATH OF CLONED REPOSITORY>/gitconfig_default
-[include]
-	path = <PATH OF CLONED REPOSITORY>/gitconfig_meld
-[include]
-	path = <PATH OF CLONED REPOSITORY>/gitconfig_aliases
-
-; https://git-scm.com/docs/git-config#_conditional_includes
-[includeIf "gitdir:~/sources/github.com/"]
-	path = ~/sources/.gitconfig_github.com
-```
-
-The section `[includeIf "gitdir:~/sources/github.com/"]` includes additional settings based on the directory pattern where the git repository was cloned to.
-These settings are only used for/in a specific git repository or environment (like directory).
+A modularized git configuration offers the possibility to work quickly and easily in various git repositories without manual changes. \
 This behavior based on [Conditional includes](git-conditional-includes) in [git](git).
 
-E.g. `~/sources/.gitconfig_github.com`:
-
-```gitconfig
-[user]
-	name = barthel
-	email = barthel@users.noreply.github.com
-```
-
-## ShellCheck
+See [here](./doc/gitconfig.md "doc/gitconfig.md") for more information about.
+## 4. ShellCheck
 
 [ShellCheck][shellcheck]³ is a static analysis tool for shell scripts and I'm use it to check my scripts and try to prevent pitfalls.
 [ShellCheck][shellcheck]³ must be configured with the extended option [`-x`][SC1091] to validate these scripts correctly.
 
-## License
+## 5. License
 
 All these scripts and configuration files are licensed under the [Apache License, Version 2.0][apl]⁴.
 A copy of this license could be also found in the `LICENSE` file.
@@ -84,7 +57,11 @@ A copy of this license could be also found in the `LICENSE` file.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ```
 
-## Links
+## 6. Attic
+
+The directory `_attic` is the place where the old and not supported scripts will be moved into it. These scripts are not maintained anymore.
+
+## 7. Links
 
 [//]: # "https://unicode-table.com/en/blocks/superscripts-and-subscripts - ¹ ² ³ ⁴ ⁵ ⁶ "
 
