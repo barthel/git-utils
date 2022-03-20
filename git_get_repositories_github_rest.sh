@@ -102,6 +102,6 @@ else
   exit 1
 fi
 
-${curl_cmd} -H "${http_headers}" | jq -r '.[] | select(.archived == false) | "\(.name)\tssh://\(.ssh_url)"'
+${curl_cmd} -H "${http_headers}" | jq -r '.[] | select(.archived == false) | "\(.name)\t\(.ssh_url)"'
 
 #
