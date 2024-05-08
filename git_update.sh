@@ -28,7 +28,7 @@ set -m
 # missing tolls on MacOS X
 # mktemp / tempfile
 # curl / wget
-required_helper=('date' 'git' 'mktemp' 'cat' 'grep' 'cut' 'sed' 'curl' 'ssh' 'readlink')
+required_helper=('date' 'git' 'mkdir' 'mktemp' 'cat' 'grep' 'cut' 'sed' 'curl' 'ssh' 'readlink')
 
 quiet=false
 gerrit_automatic_configuration=true
@@ -160,6 +160,7 @@ _clone_git_repository() {
           [ true == ${quiet} ] && script --quiet --append --return --command "${git_clone_cmd} ${repo_url} ." /dev/null 2>&1 > /dev/null || ${git_clone_cmd} ${repo_url} .
           popd 2>&1 > /dev/null
         else
+          mkdir -p "${local_dir}"
           [ true == ${quiet} ] && script --quiet --append --return --command "${git_clone_cmd} ${repo_url} ${local_dir}" /dev/null 2>&1 > /dev/null || ${git_clone_cmd} ${repo_url} ${local_dir}
       fi
   fi
