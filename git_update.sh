@@ -29,6 +29,8 @@ set -m
 # mktemp / tempfile
 # curl / wget
 required_helper=('date' 'git' 'mkdir' 'mktemp' 'cat' 'grep' 'cut' 'sed' 'curl' 'ssh' 'readlink')
+# optional: pre-commit
+pre_commit_available=false
 
 quiet=false
 gerrit_automatic_configuration=true
@@ -48,6 +50,13 @@ git_config_cmd="${git_cmd} config "
 git_clean_cmd="${git_cmd} clean -fX "
 git_gc_cmd="${git_cmd} gc "
 
+pre_commit_cmd="$(command -v pre-commit)"
+[ "" != "${pre_commit_cmd}" ] && pre_commit_available=true
+if [ ${pre_commit_available} ]
+then
+  pre_commit_install_cmd="${pre_commit_cmd} install --install-hooks --allow-missing-config "
+  pre_commit_autoupdate_cmd="${pre_commit_cmd} autoupdate"
+fi
 
 [ -z ${verbose} ] && verbose=0
 [ -z ${clean} ] && clean=0
@@ -460,6 +469,10 @@ do
 
   _git_configure_repository "${include_gitconfig_file}" "${repo_name}" "${log_prefix}"
   [ 0 != $? ] && exit $? || true
+  if [ true == ${pre_commit_available} ] 
+  then
+    [ true == ${quiet} ] && script --quiet --append --return --command "${pre_commit_install_cmd}" /dev/null 2>&1 > /dev/null || ${pre_commit_install_cmd}
+  fi
 
   [ false == ${gerrit_automatic_configuration} ] && popd 2>&1 > /dev/null && counter=$((counter + 1)) && continue
 

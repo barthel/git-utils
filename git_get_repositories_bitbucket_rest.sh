@@ -32,12 +32,13 @@ Usage: ${0##*/} [-h?v] -p PROJECT -s SERVER_URL [-u USER]
 Get all GIT repositories of a project provided by Bitbucket server via REST API.
 
     -h|-?         display this help and exit.
-    -p PROJECT    the project key on Bitbucket server.
+    -p PROJECT    the project key on Bitbucket server or the private Bitbucket space like ~${USER}.
     -s SERVER_URL Bitbucket server URL (e.g.: https://git.server.tld).
     -u USER       user ID for BASIC-Auth authentification against the Bitbucket server.
     -v            verbose mode. Can be used multiple times for increased verbosity.
 
-Example: ${0##*/} -p "EXAMPLE" -s https://git.server.tld -u ${USER}
+Example:  ${0##*/} -p "EXAMPLE" -s https://git.server.tld -u ${USER}
+          ${0##*/} -p "~${USER}" -s https://git.server.tld -u ${USER}
 EOF
 }
 

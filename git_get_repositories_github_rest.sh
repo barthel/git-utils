@@ -14,7 +14,7 @@
 # <repo name><TAB><repo url>
 #
 # List projects of a project and the REST connection:
-# @see: https://docs.github.com/en/rest/reference/repos#list-repositories-for-a-user
+# @see: https://docs.github.com/en/rest/repos/repos#list-repositories-for-a-user
 
 # activate job monitoring
 # @see: http://www.linuxforums.org/forum/programming-scripting/139939-fg-no-job-control-script.html
@@ -81,13 +81,13 @@ done
 shift $((OPTIND-1))
 
 # @see: https://docs.github.com/en/rest/overview/media-types
-http_headers='Accept: application/vnd.github.v3+json;'
+http_headers='Accept: application/vnd.github+json;'
 
 if [ -n "${pat}" ]
 then
   # get all private and public repositories of Github user provided by the Personal Access Token
   # @see: https://docs.github.com/en/rest/reference/repos#list-repositories-for-the-authenticated-user
-  http_headers="Authorization: token ${pat}"
+  http_headers="Authorization: Bearer ${pat}"
   curl_cmd+=" -X GET ${github_api_server}/user/repos?visibility=all&archived=false&affiliation=${affiliation}"
 elif [ -n "${user}" ]
 then
